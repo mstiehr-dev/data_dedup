@@ -23,27 +23,30 @@ int main(int argc, char **argv) {
 	/* Dateigröße ermitteln */
 	fseek(file,0,SEEK_END);
 	inputFileSize = ftell(file);
+	fseek(file,0,SEEK_SET);
 	
 /* journal öffnen */
-	FILE *journal = fopen(JOURNALFILE, "a+t");
+/* journal soll dann mal in den Speicher geholt werden */
+	FILE *journal = fopen(JOURNALFILE, "a+b");
 	if(journal==NULL) {
 		perror("ERROR: could not open journal file");
 		exit(1);
 	}
 	/* wieviele Blocks gibts schon? */
-	journalLineNumber = countLines(journal); // laufende nummer der (globalen) blöcke (Zeilen im Journal)
+	fseek(journal,0,SEEK_END);
+	journalLineNumber = (ftell(journal)+1)/JOURNALLINELENGTH; // laufende nummer der (globalen) blöcke (Zeilen im Journal)
 	printf("locking file %s:\n",JOURNALFILE);
 	flockfile(journal);
 	
 /* Storage öffnen */
-	FILE *storage = fopen(STORAGEDUMP, "a+");
+	FILE *storage = fopen(STORAGEDUMP, "a+b");
 	if(storage==NULL) {
 		perror("ERROR: could not open storage dump file");
 		exit(1);
 	}
 	printf("locking file %s\n",STORAGEDUMP);
 	flockfile(storage);
-	fseek(storage,0,SEEK_END);
+	fseek(storage,0,SEEK_END); // Positionszeiger soll auch am Ende bleiben 
 	storageBlockPosition = ftell(storage); // aktuelle Blockadresse im Storagedump
 
 /* deduplizierten dateiindex erstellen */
@@ -63,6 +66,8 @@ int main(int argc, char **argv) {
 				free(dataBuffer);
 			return(1);
 		}
+		/* es soll überschrieben werden */
+		fclose(tmeta);
 	}
 	FILE * meta = fopen(metafile,"w"); // nur schreiben, falls existent, löschen 
 	if(meta==NULL) {
@@ -76,20 +81,24 @@ int main(int argc, char **argv) {
 	 * das könnte später noch in kleineren Schritten erfolgen */
 	int i=0;
 	dataBuffer = (char *) malloc(inputFileSize);
-	while(fread(dataBuffer+i*CHUNKSIZE,1,CHUNKSIZE,file)>0){
+	while(fread(dataBuffer+i*CHUNKSIZE,CHUNKSIZE,1,file)>0){
 		i++; // fread hört auf, wenn es nichts mehr zu lesen gibt 
 	}
 	
 	/* durch den Datenbuffer gehen */ 
-	char md5String [32+1];
-	size_t current_read=0;
-	int showProgress = 0;
+	char md5String [32+1]; // dort landet der Hash
+	unsigned int current_read=0; // speichert, wie viele Bytes im aktuellen Durchlauf betrachtet werden
 	int bytesRead;
 	long run=0;
+	long newBlocks=0;
 	for(bytesRead=0;bytesRead<inputFileSize;) {
-		if(++run%100==0)
-			printf("+");
+		if(++run%100==0) {
+			if(metaChanged)
+				printf("+");
+			else
+				printf("-");
 			fflush(stdout);
+		}
 		metaChanged = FALSE;
 		current_read = (CHUNKSIZE<=(inputFileSize-bytesRead)) ? CHUNKSIZE : (size_t)(inputFileSize-bytesRead);
 		MD5_CTX md5context;
@@ -98,33 +107,34 @@ int main(int argc, char **argv) {
 			perror("***Fehler beim Initialisieren von md5***");
 			exit(1);
 		}
-		//printf("%s\n",(char *) dataBuffer+i);
 		/* jetzt den Hash errechnen */
 		MD5_Update(&md5context, dataBuffer+bytesRead, current_read); 
 		MD5_Final(md,&md5context);
 		int k;
 		for(k=0; k<16; k++) // md5 String bauen 
 			sprintf(&md5String[k*2],"%02x",(unsigned int) md[k]);
-		//printf("[%-4i] - [%-4li] --> %s\n",i,current_read, md5String);
 		// hash sichern 
-		hashNummer=findHashInJournal(md5String,journal);
-		if(hashNummer==-1) {
+		hashInJournal=isHashInJournal(md5String,journal);
+		fseek(journal,0,SEEK_END);
+		if(hashInJournal==-1) {
 			// neuer hash -> anhängen 
-			schreibNummer = journalLineNumber; // der neue Zeilenindex wird ins Metafile geschrieben 
-			fseek(journal,0,SEEK_END);
-			fprintf(journal,"%ld;%s;%i;\n",storageBlockPosition,md5String,(current_read<CHUNKSIZE)?current_read:0);// die journalLineNumber im Journal dient erstmal der Kontrolle, ist nachher aber überflüssig (zeilennummer = journalLineNumber)
-			//printf("***new block***\n");
+			hashIDforMetafile = journalLineNumber; // der neue Zeilenindex wird ins Metafile geschrieben 
+			struct datensatz tupel;
+				tupel.blocknummer = storageBlockPosition;
+				strncpy(tupel.hash,md5String,33);
+				tupel.length = current_read; //(current_read<CHUNKSIZE)?current_read:0; // nicht mehr nötig, da Speicherung als Short
+			fwrite(&tupel,sizeof(struct datensatz),1,journal);
 			fwrite(dataBuffer+bytesRead, current_read, 1, storage); // block wegschreiben
-			metaChanged = TRUE;
+			metaChanged = TRUE; 
 		} else { // hash ist bereits bekannt, kann wieder verwendet werden 
-			schreibNummer = hashNummer; // der vorhandene Zeilenindex wird gesichert 
-			//printf("already got this one! it's stored in line %ld\n",schreibNummer);
+			hashIDforMetafile = hashInJournal; // der vorhandene Zeilenindex wird gesichert 
 		}
 		/* datei-index aktualisieren */
-		fprintf(meta, "%ld\n",schreibNummer); // ehemals storageBlockPosition
+		fprintf(meta, "%ld\n",hashIDforMetafile); // ehemals storageBlockPosition
 		if(metaChanged==TRUE) {
 			storageBlockPosition+=current_read;
 			journalLineNumber++;
+			newBlocks++;
 		}
 		bytesRead+=current_read;
 	}
@@ -136,6 +146,7 @@ int main(int argc, char **argv) {
 		free(metafile);
 	if(dataBuffer)
 		free(dataBuffer);
-	printf("*** File deduplication finished ***\n\n");
+	printf("\n*** File deduplication of file %s finished ***\n\n",basename(filename));
+	printf("stored %ld new blocks!\n",newBlocks);
 	return 0;
 }

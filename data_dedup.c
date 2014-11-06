@@ -13,27 +13,18 @@ char * buildString3s(const char *s1, const char *s2, const char *s3) {
 	return newStr;
 }
 
-long countLines(FILE *f) {
-	long blocks = 0;
-	char line[255];
-	rewind(f);
-	while(fgets(line,255,f)!=NULL)
-		blocks++;
-	return blocks;
-}
-
-long findHashInJournal(char *hash, FILE *j) {
+long isHashInJournal(char *hash, FILE *journal) {
 	/* Rückgabewert: Zeilennummer, in der der Hash gefunden wurde, also auch die Blocknummer im dumpfile
 	 * sonst -1 */
-	char line[255]; // hier kommen die gelesenen Zeilen rein
-	long zeilenNummer = 0;
-	rewind(j);
-	while(fgets(line, 255, j)!=NULL) {
-		if(strstr(line,hash)!=NULL) {
+	struct datensatz tupel;
+	long datensatz = 0;
+	fseek(journal,0,SEEK_SET);
+	while(fread(&tupel,sizeof(struct datensatz),1,journal)) {
+		if(strstr(tupel.hash,hash)!=NULL) {
 			// Hash gefunden 
-			return zeilenNummer;
+			return datensatz;
 		}
-		zeilenNummer++;
+		datensatz++;
 	}
 	return -1;
 }

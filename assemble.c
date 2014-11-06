@@ -12,10 +12,10 @@ int main(int argc, char **argv) {
 	
 	FILE *meta = fopen(filename, "rt");
 	if(meta==NULL) {
-		fprintf(stderr,"ERROR: could not open %s\n",meta);
+		fprintf(stderr,"ERROR: could not open %s\n",filename);
 		exit(1);
 	}
-	FILE *journal = fopen(JOURNALFILE,"rt");
+	FILE *journal = fopen(JOURNALFILE,"rb");
 	if(journal==NULL) {
 		fprintf(stderr,"ERROR: could not open Journalfile %s\n",JOURNALFILE);
 		exit(1);
@@ -34,11 +34,15 @@ int main(int argc, char **argv) {
 	long metaLine, journalLine=0;
 	dataBuffer = (char *) malloc((255+1)*sizeof(char));
 	char *token;
-	/* informationen aus metafile holen */
+	/* informationen Zeilenweise aus metafile holen */
+	struct datensatz tupel;
 	while(fgets(dataBuffer,255,meta)) {
-		metaLine = atoll(dataBuffer);
-		printf("hole Zeile %ld\n",metaLine);
+		metaLine = atoll(dataBuffer); // dieser Datensatz wird aus dem Journal benötigt
+		printf("hole Zeile %ld aus Journal\n",metaLine);
 		//fseek(journal,0,SEEK_SET);
+		fseek(journal,metaLine*sizeof(struct datensatz),SEEK_SET);
+		fread(&tupel,sizeof(struct datensatz),1,journal);
+		/*
 		while(journalLine<=metaLine) { //informationen aus journal holen 
 			fgets(dataBuffer,255,journal);
 			journalLine++;
@@ -50,8 +54,9 @@ int main(int argc, char **argv) {
 		blockLength = atoll(token);
 		if(blockLength==0) 
 			blockLength = CHUNKSIZE;
-		printf("muss bauen: Block %ld, Länge %ld\n",storageBlockPosition,blockLength); // läuft
-		fseek(storage,storageBlockPosition,SEEK_SET);
+		*/
+		printf("muss bauen: Block %ld, Länge %d\n",tupel.blocknummer,tupel.length); // läuft
+		fseek(storage,tupel.blocknummer,SEEK_SET);
 		char readBuffer [CHUNKSIZE+1];
 		fread(readBuffer,blockLength,1,storage);
 		fwrite(readBuffer,blockLength,1,output);

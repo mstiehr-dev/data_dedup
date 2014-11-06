@@ -18,35 +18,42 @@
 	#define CHUNKSIZE 512
 
 	// allgemeine dateien 
-	#define JOURNALFILE "./journal.txt"
-	#define STORAGEDUMP "./storage.dump"
+	#define JOURNALFILE "./journal.dat"
+	#define STORAGEDUMP "./storage.dat"
 	#define RESTOREDIR "./restored/"
 	#define METADIR "./metafiles/"
 
 	#define TRUE  1
 	#define FALSE 0
 
+	struct datensatz {
+		long blocknummer;
+		char hash[33];
+		unsigned short length;
+	};
+	
+	#define JOURNALLINELENGTH sizeof(struct datensatz) //sizeof(long) + 33*sizeof(char) + sizeof(unsigned short)
+	
 	struct stat inputfile_statbuffer;
 
-
-	/* Anzahl der existenten Blöcke ermitteln */
-	long countLines(FILE *);
-	long findHashInJournal(char *, FILE *);
+	// Funktionen: 
+	long isHashInJournal(char *, FILE *);
 	char * 	  buildString3s(const char *, const char *, const char *);
 
-	// long storageBlockNummer; // laufende nummer der (globalen) blöcke // siehe storageBlockPosition
+	// Variablen
 	long inputFileSize;
 	long journalLineNumber; // Zeilenindex des Journals
-	long hashNummer; // nummer der zeile, in der ein hash steht
-	long schreibNummer;
+	long hashInJournal; // nummer der zeile, in der ein hash steht
+	long hashIDforMetafile;
 	long storageBlockPosition; // Anfang des Datenblocks im Storagedump
 	long blockLength;
 	char *    dataBuffer;
 	char *    filename;
 	char *    metafile;
 	char *	  restorefile;
-
+	size_t journalLineLength;// = sizeof(size_t) + 33*sizeof(char) + sizeof(long);
 	int 	  retVal;
 
+	
 
 #endif
