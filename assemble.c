@@ -20,10 +20,11 @@ int main(int argc, char **argv) {
 		fprintf(stderr,"ERROR: could not open Journalfile %s\n",JOURNALFILE);
 		exit(1);
 	}
-	restorefile = buildString3s(RESTOREDIR,basename(filename), "");
-	FILE *output = fopen(restorefile,"wb");
+	char *restorefilename = buildString3s(RESTOREDIR,basename(filename), "");
+	*(restorefilename+(strlen(restorefilename)-5)) = '\0';
+	FILE *output = fopen(restorefilename,"wb");
 	if(output==NULL) {
-		fprintf(stderr,"ERROR: could not open file \'%s\' for writing\n",restorefile);
+		fprintf(stderr,"ERROR: could not open file \'%s\' for writing\n",restorefilename);
 		exit(1);
 	}
 	FILE *storage = fopen(STORAGEDUMP,"rb");
@@ -32,37 +33,29 @@ int main(int argc, char **argv) {
 		exit(1);
 	}
 	long metaLine, journalLine=0;
-	dataBuffer = (char *) malloc((255+1)*sizeof(char));
+	journalLineBuffer = (char *) malloc((255+1)*sizeof(char));
 	char *token;
 	/* informationen Zeilenweise aus metafile holen */
 	struct datensatz tupel;
-	while(fgets(dataBuffer,255,meta)) {
-		metaLine = atoll(dataBuffer); // dieser Datensatz wird aus dem Journal benötigt
-		printf("hole Zeile %ld aus Journal\n",metaLine);
-		//fseek(journal,0,SEEK_SET);
+	long run=0;
+	while(fgets(journalLineBuffer,255,meta)) {
+		if(++run%50==0) {
+			fflush(stdout);
+			printf("*");
+		}
+		metaLine = atoll(journalLineBuffer); // dieser Datensatz wird aus dem Journal benötigt
 		fseek(journal,metaLine*sizeof(struct datensatz),SEEK_SET);
 		fread(&tupel,sizeof(struct datensatz),1,journal);
-		/*
-		while(journalLine<=metaLine) { //informationen aus journal holen 
-			fgets(dataBuffer,255,journal);
-			journalLine++;
-		} // die benötigte Zeile liegt jetzt in dataBuffer
-		token = strtok(dataBuffer,";"); 
-		storageBlockPosition = atoll(token);
-		token = strtok(NULL,";"); // wird nicht gebraucht 
-		token = strtok(NULL,";");
-		blockLength = atoll(token);
-		if(blockLength==0) 
-			blockLength = CHUNKSIZE;
-		*/
-		printf("muss bauen: Block %ld, Länge %d\n",tupel.blocknummer,tupel.length); // läuft
 		fseek(storage,tupel.blocknummer,SEEK_SET);
 		char readBuffer [CHUNKSIZE+1];
-		fread(readBuffer,blockLength,1,storage);
-		fwrite(readBuffer,blockLength,1,output);
+		fread(readBuffer,tupel.length,1,storage);
+		fwrite(readBuffer,tupel.length,1,output);
 	}
+	printf("\nrestored file successfully: %s\n\n",restorefilename);
 	fcloseall();
-	if(dataBuffer!=NULL)
-		free(dataBuffer);
+	if(journalLineBuffer!=NULL)
+		free(journalLineBuffer);
+	if(restorefilename)
+		free(restorefilename);
 	return 0;
 }

@@ -17,7 +17,7 @@ int main(int argc, char **argv) {
 /* Originaldatei */
 	FILE *file = fopen(filename,"r");
 	if(!file) {
-		perror("***Fehler beim Öffnen der Datei***");
+		fprintf(stderr,"***Fehler beim Öffnen der Datei***\n",filename);
 		exit(1);
 	}
 	/* Dateigröße ermitteln */
@@ -50,26 +50,26 @@ int main(int argc, char **argv) {
 	storageBlockPosition = ftell(storage); // aktuelle Blockadresse im Storagedump
 
 /* deduplizierten dateiindex erstellen */
-	metafile = buildString3s(METADIR,basename(filename), ".meta");
-	FILE *tmeta = fopen(metafile,"rt");
+	metafilename = buildString3s(METADIR,basename(filename), ".meta");
+	FILE *tmeta = fopen(metafilename,"rt");
 	if(tmeta!=NULL) {
-		fprintf(stdout,"ERROR: file %s already exists.\nOverwrite? (y/N) >",metafile);
+		fprintf(stdout,"ERROR: file %s already exists.\nOverwrite? (y/N) >",metafilename);
 		char stdinBuf[2];
 		fgets(stdinBuf,2,stdin);
 		if('Y' != (*stdinBuf&0x59)) {
 			// nicht überschreiben -> Abbruch
 			fprintf(stdout,"Abbruch\n");
 			fcloseall();
-			if(metafile)
-				free(metafile);
-			if(dataBuffer)
-				free(dataBuffer);
+			if(metafilename)
+				free(metafilename);
+			if(journalLineBuffer)
+				free(journalLineBuffer);
 			return(1);
 		}
 		/* es soll überschrieben werden */
 		fclose(tmeta);
 	}
-	FILE * meta = fopen(metafile,"w"); // nur schreiben, falls existent, löschen 
+	FILE * meta = fopen(metafilename,"w"); // nur schreiben, falls existent, löschen 
 	if(meta==NULL) {
 		perror("ERROR: could not open dedup-file for writing");
 		exit(1);
@@ -80,8 +80,8 @@ int main(int argc, char **argv) {
 	/* Dateiinhalt in Speicher holen: 
 	 * das könnte später noch in kleineren Schritten erfolgen */
 	int i=0;
-	dataBuffer = (char *) malloc(inputFileSize);
-	while(fread(dataBuffer+i*CHUNKSIZE,CHUNKSIZE,1,file)>0){
+	journalLineBuffer = (char *) malloc(inputFileSize);
+	while(fread(journalLineBuffer+i*CHUNKSIZE,CHUNKSIZE,1,file)>0){
 		i++; // fread hört auf, wenn es nichts mehr zu lesen gibt 
 	}
 	
@@ -108,7 +108,7 @@ int main(int argc, char **argv) {
 			exit(1);
 		}
 		/* jetzt den Hash errechnen */
-		MD5_Update(&md5context, dataBuffer+bytesRead, current_read); 
+		MD5_Update(&md5context, journalLineBuffer+bytesRead, current_read); 
 		MD5_Final(md,&md5context);
 		int k;
 		for(k=0; k<16; k++) // md5 String bauen 
@@ -124,7 +124,7 @@ int main(int argc, char **argv) {
 				strncpy(tupel.hash,md5String,33);
 				tupel.length = current_read; //(current_read<CHUNKSIZE)?current_read:0; // nicht mehr nötig, da Speicherung als Short
 			fwrite(&tupel,sizeof(struct datensatz),1,journal);
-			fwrite(dataBuffer+bytesRead, current_read, 1, storage); // block wegschreiben
+			fwrite(journalLineBuffer+bytesRead, current_read, 1, storage); // block wegschreiben
 			metaChanged = TRUE; 
 		} else { // hash ist bereits bekannt, kann wieder verwendet werden 
 			hashIDforMetafile = hashInJournal; // der vorhandene Zeilenindex wird gesichert 
@@ -142,11 +142,11 @@ int main(int argc, char **argv) {
 	funlockfile(storage);
 	
 	fcloseall(); // alle Datei-Ströme schließen
-	if(metafile)
-		free(metafile);
-	if(dataBuffer)
-		free(dataBuffer);
-	printf("\n*** File deduplication of file %s finished ***\n\n",basename(filename));
-	printf("stored %ld new blocks!\n",newBlocks);
+	if(metafilename)
+		free(metafilename);
+	if(journalLineBuffer)
+		free(journalLineBuffer);
+	printf("\n*** File deduplication of file %s finished ***\n",basename(filename));
+	printf("stored %ld new blocks!\n\n",newBlocks);
 	return 0;
 }

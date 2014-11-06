@@ -47,10 +47,10 @@
 	long hashIDforMetafile;
 	long storageBlockPosition; // Anfang des Datenblocks im Storagedump
 	long blockLength;
-	char *    dataBuffer;
+	char *    journalLineBuffer;
 	char *    filename;
-	char *    metafile;
-	char *	  restorefile;
+	char *    metafilename;
+	char *	  restorefilename;
 	size_t journalLineLength;// = sizeof(size_t) + 33*sizeof(char) + sizeof(long);
 	int 	  retVal;
 
