@@ -1,0 +1,24 @@
+Stand 03.11.2014
+
+deduplicate:
+	übergebene datei wird in chunks zerteilt 
+	die datei bekommt einen Stellvertreter (Metafile), in dem für jeden Block (zeilenweise) steht, in welcher Zeile des Journals der jeweilige Block auftaucht 
+	jeder chunk wird gehasht
+	hash wird in journal gesucht
+	  treffer: $info = zeilennummer
+	  kein treffer: neuer Datenblock
+			Datenblock wird an den storagedump angehängt 
+			neue zeile wird in Journal angefügt, $info ist neue nummer
+	$info wird am ende des metafiles angefügt 
+	
+	am ende gibt es für jede deduplizierte datei ein Metafile(Klartext), welches auf Zeilen des Journals verweist
+	alle einzigartigen blöcke befinden sich im storagedump 
+
+assemble: 
+	metafile wird zeilenweise abgearbeitet 
+	in jeder zeile steht eine zeilennummer
+	diese zeile wird im journal aufgerufen 
+	mit diesen informationen kann der block aus dem dumpfile kopiert
+	und an der zieldatei angefügt werden 
+
+
