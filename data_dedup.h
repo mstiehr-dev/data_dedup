@@ -31,14 +31,19 @@
 		char hash[33];
 		unsigned short length;
 	};
-	
+
 	#define JOURNALLINELENGTH sizeof(struct datensatz) //sizeof(long) + 33*sizeof(char) + sizeof(unsigned short)
 	
 	struct stat inputfile_statbuffer;
 
+	const size_t extraSpaceForNewTupels = 100*JOURNALLINELENGTH;
+	size_t leftSpaceForNewTupels;
+	size_t addedTupels;
+
 	// Funktionen: 
-	long isHashInJournal(char *, FILE *);
-	char * 	  buildString3s(const char *, const char *, const char *);
+	long   isHashInJournal(char *, FILE *);
+	long   isHashInMappedJournal(char *, void *, long );
+	char * buildString3s(const char *, const char *, const char *);
 
 	// Variablen
 	long inputFileSize;

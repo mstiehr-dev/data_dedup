@@ -17,7 +17,7 @@ long isHashInJournal(char *hash, FILE *journal) {
 	/* Rückgabewert: Zeilennummer, in der der Hash gefunden wurde, also auch die Blocknummer im dumpfile
 	 * sonst -1 */
 	struct datensatz tupel;
-	long datensatz = 0;
+	unsigned long datensatz = 0;
 	fseek(journal,0,SEEK_SET);
 	while(fread(&tupel,sizeof(struct datensatz),1,journal)) {
 		if(strstr(tupel.hash,hash)!=NULL) {
@@ -25,6 +25,22 @@ long isHashInJournal(char *hash, FILE *journal) {
 			return datensatz;
 		}
 		datensatz++;
+	}
+	return -1;
+}
+
+long isHashInMappedJournal(char *hash, void * add, long records, struct datensatz *db) {
+	/* Rückgabewert: Zeilennummer, in der der Hash gefunden wurde, also auch die Blocknummer im dumpfile
+	 * sonst -1 */
+	struct datensatz tupel;
+	unsigned long run = 0;
+	while(run<records) {
+		memcpy(&tupel,pa+run*sizeof(struct datensatz),sizeof(struct datensatz));
+		if(strstr(tupel.hash,hash)!=NULL) {
+			// Hash gefunden 
+			return run;
+		}
+		run++;
 	}
 	return -1;
 }

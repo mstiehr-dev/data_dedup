@@ -3,8 +3,15 @@
  * gcc versuch1.c -o v1 -lssl -lcrypto
  */
 
+/* journal:
+	wird in den speicher gemappt 
+	dort wird gleich etwas mehr platz reserviert 
+	-> neue Einträge können angefügt werden
+
+*/
 
 #include "data_dedup.h"
+
 
 char metaChanged = FALSE; 
 int main(int argc, char **argv) {
@@ -32,11 +39,20 @@ int main(int argc, char **argv) {
 		perror("ERROR: could not open journal file");
 		exit(1);
 	}
-	/* wieviele Blocks gibts schon? */
-	fseek(journal,0,SEEK_END);
-	journalLineNumber = (ftell(journal)+1)/JOURNALLINELENGTH; // laufende nummer der (globalen) blöcke (Zeilen im Journal)
 	printf("locking file %s:\n",JOURNALFILE);
 	flockfile(journal);
+	fseek(journal,0,SEEK_END);
+	long journalLength = ftell(journal);
+	long journalEntries = journalLength / JOURNALLINELENGTH;
+	// journal in Speicher holen: 
+	long journalMapSize = journalLength+extraSpaceForNewTupels;
+	void * journalMapAdress = mmap(0,journalMapSize, PROT_WRITE, MAP_PRIVATE, fileno(journal),0); // zusätzlicher Platz für 100 Datensätze 
+	if(journalMapAdress == MAP_FAILED) {
+		perror("ERROR: could not map journal!");
+		exit(1);
+	}
+	leftSpaceForNewTupels = extraSpaceForNewTupels;
+	addedTupels = 0;
 	
 /* Storage öffnen */
 	FILE *storage = fopen(STORAGEDUMP, "a+b");
@@ -114,17 +130,18 @@ int main(int argc, char **argv) {
 		for(k=0; k<16; k++) // md5 String bauen 
 			sprintf(&md5String[k*2],"%02x",(unsigned int) md[k]);
 		// hash sichern 
-		hashInJournal=isHashInJournal(md5String,journal);
+		hashInMappedJournal=isHashInJournal(md5String,journalMapAdress,journalEntries);
 		fseek(journal,0,SEEK_END);
 		if(hashInJournal==-1) {
 			// neuer hash -> anhängen 
-			hashIDforMetafile = journalLineNumber; // der neue Zeilenindex wird ins Metafile geschrieben 
+			hashIDforMetafile = journalEntries; // der neue Zeilenindex wird ins Metafile geschrieben 
 			struct datensatz tupel;
 				tupel.blocknummer = storageBlockPosition;
 				strncpy(tupel.hash,md5String,33);
 				tupel.length = current_read; //(current_read<CHUNKSIZE)?current_read:0; // nicht mehr nötig, da Speicherung als Short
-			fwrite(&tupel,sizeof(struct datensatz),1,journal);
-			fwrite(journalLineBuffer+bytesRead, current_read, 1, storage); // block wegschreiben
+			memcpy(journalMapAdress+journalEntries*JOURNALLINELENGTH,&tupel,JOURNALLINELENGTH);
+			//fwrite(&tupel,sizeof(struct datensatz),1,journal);
+			//fwrite(journalLineBuffer+bytesRead, current_read, 1, storage); // block wegschreiben
 			metaChanged = TRUE; 
 		} else { // hash ist bereits bekannt, kann wieder verwendet werden 
 			hashIDforMetafile = hashInJournal; // der vorhandene Zeilenindex wird gesichert 
@@ -133,19 +150,34 @@ int main(int argc, char **argv) {
 		fprintf(meta, "%ld\n",hashIDforMetafile); // ehemals storageBlockPosition
 		if(metaChanged==TRUE) {
 			storageBlockPosition+=current_read;
-			journalLineNumber++;
+			journalEntries++;
+			if(++addedTupels==(extraSpaceForNewTupels/JOURNALLINELENGTH) {
+				// mremap():
+				msync(journalMapAdress,journalMapSize, MAP_PRIVATE);
+				void * newAdd = mremap(journalMapAdress,journalMapSize, journalMapSize + extraSpaceForNewTupels, MAP_PRIVATE);
+				if(newAdd==MAP_FAILED) {
+					fprintf(stderr, "ERROR: could not remap journal - data loss likely!\n");
+					exit(1);
+				}
+				journalMapSize += extraSpaceForNewTupels;
+				journalMapAdress = newAdd;
+			}
 			newBlocks++;
 		}
 		bytesRead+=current_read;
 	}
+	if(journalMapAdress)
+		munmap(journalMapAdress,journalMapSize);
 	funlockfile(journal); // Dateisperren aufheben
 	funlockfile(storage);
-	
 	fcloseall(); // alle Datei-Ströme schließen
 	if(metafilename)
 		free(metafilename);
 	if(journalLineBuffer)
 		free(journalLineBuffer);
+	if(dirtyBuffer) 
+		free(dirtyBuffer);
+
 	printf("\n*** File deduplication of file %s finished ***\n",basename(filename));
 	printf("stored %ld new blocks!\n\n",newBlocks);
 	return 0;

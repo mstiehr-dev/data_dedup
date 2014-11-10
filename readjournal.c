@@ -26,6 +26,7 @@ int main(int argc, char **argv) {
 	fseek(f,0,SEEK_SET);
 
 	void * pa = mmap(0,flength,PROT_READ,MAP_PRIVATE,fileno(f),0);
+	fclose(f);
 	if(pa==MAP_FAILED) {
 		perror("ERROR: could not map your file!");
 		exit(1);
@@ -42,7 +43,5 @@ int main(int argc, char **argv) {
 	}
 
 	munmap(pa,flength);
-	if(f!=NULL) 
-		fclose(f);
 	return 0;
 }
