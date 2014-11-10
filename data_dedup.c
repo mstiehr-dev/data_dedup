@@ -35,7 +35,7 @@ long isHashInMappedJournal(char *hash, void * add, long records) {
 	struct datensatz tupel;
 	unsigned long run = 0;
 	while(run<records) {
-		memcpy(&tupel,pa+run*sizeof(struct datensatz),sizeof(struct datensatz));
+		memcpy(&tupel,add+run*JOURNALLINELENGTH,JOURNALLINELENGTH);
 		if(strstr(tupel.hash,hash)!=NULL) {
 			// Hash gefunden 
 			return run;

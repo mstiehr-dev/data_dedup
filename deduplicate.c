@@ -130,12 +130,12 @@ int main(int argc, char **argv) {
 		for(k=0; k<16; k++) // md5 String bauen 
 			sprintf(&md5String[k*2],"%02x",(unsigned int) md[k]);
 		// hash sichern 
-		hashInMappedJournal=isHashInJournal(md5String,journalMapAdress,journalEntries);
+		long hashInMappedJournal=isHashInMappedJournal(md5String,journalMapAdress,journalEntries);
 		fseek(journal,0,SEEK_END);
-		if(hashInJournal==-1) {
+		if(hashInMappedJournal==-1) {
 			// neuer hash -> anhängen 
 			hashIDforMetafile = journalEntries; // der neue Zeilenindex wird ins Metafile geschrieben 
-			struct datensatz tupel;
+			struct datensatz tupel; // Datensatz bauen 
 				tupel.blocknummer = storageBlockPosition;
 				strncpy(tupel.hash,md5String,33);
 				tupel.length = current_read; //(current_read<CHUNKSIZE)?current_read:0; // nicht mehr nötig, da Speicherung als Short
