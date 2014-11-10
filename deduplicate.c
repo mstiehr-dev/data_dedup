@@ -141,7 +141,9 @@ int main(int argc, char **argv) {
 				tupel.blocknummer = storageBlockPosition;
 				strncpy(tupel.hash,md5String,33);
 				tupel.length = current_read; //(current_read<CHUNKSIZE)?current_read:0; // nicht mehr nötig, da Speicherung als Short
+			printf("vor memcpy\n");
 			memcpy(journalMapAdress+journalEntries*JOURNALLINELENGTH,&tupel,JOURNALLINELENGTH);
+			printf("nach memcpy\n");
 			//fwrite(&tupel,sizeof(struct datensatz),1,journal);
 			//fwrite(journalLineBuffer+bytesRead, current_read, 1, storage); // block wegschreiben
 			metaChanged = TRUE; 
