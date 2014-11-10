@@ -29,7 +29,7 @@ long isHashInJournal(char *hash, FILE *journal) {
 	return -1;
 }
 
-long isHashInMappedJournal(char *hash, void * add, long records, struct datensatz *db) {
+long isHashInMappedJournal(char *hash, void * add, long records) {
 	/* Rückgabewert: Zeilennummer, in der der Hash gefunden wurde, also auch die Blocknummer im dumpfile
 	 * sonst -1 */
 	struct datensatz tupel;
