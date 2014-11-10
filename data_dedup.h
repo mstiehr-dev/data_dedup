@@ -13,6 +13,7 @@
 	#include <libgen.h> /* basename() */
 
 	#include <openssl/md5.h>
+	#include <sys/mman.h>
 
 
 	#define CHUNKSIZE 512
@@ -33,11 +34,10 @@
 	};
 
 	#define JOURNALLINELENGTH sizeof(struct datensatz) //sizeof(long) + 33*sizeof(char) + sizeof(unsigned short)
+#define EXTRASPACEFORNEWTUPELS 100*JOURNALLINELENGTH
 	
 	struct stat inputfile_statbuffer;
 
-	const size_t extraSpaceForNewTupels = 100*JOURNALLINELENGTH;
-	size_t leftSpaceForNewTupels;
 	size_t addedTupels;
 
 	// Funktionen: 

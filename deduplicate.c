@@ -45,13 +45,12 @@ int main(int argc, char **argv) {
 	long journalLength = ftell(journal);
 	long journalEntries = journalLength / JOURNALLINELENGTH;
 	// journal in Speicher holen: 
-	long journalMapSize = journalLength+extraSpaceForNewTupels;
+	long journalMapSize = journalLength+EXTRASPACEFORNEWTUPELS;
 	void * journalMapAdress = mmap(0,journalMapSize, PROT_WRITE, MAP_PRIVATE, fileno(journal),0); // zusätzlicher Platz für 100 Datensätze 
 	if(journalMapAdress == MAP_FAILED) {
 		perror("ERROR: could not map journal!");
 		exit(1);
 	}
-	leftSpaceForNewTupels = extraSpaceForNewTupels;
 	addedTupels = 0;
 	
 /* Storage öffnen */
@@ -151,15 +150,15 @@ int main(int argc, char **argv) {
 		if(metaChanged==TRUE) {
 			storageBlockPosition+=current_read;
 			journalEntries++;
-			if(++addedTupels==(extraSpaceForNewTupels/JOURNALLINELENGTH) {
+			if(++addedTupels==(EXTRASPACEFORNEWTUPELS/JOURNALLINELENGTH)) {
 				// mremap():
 				msync(journalMapAdress,journalMapSize, MAP_PRIVATE);
-				void * newAdd = mremap(journalMapAdress,journalMapSize, journalMapSize + extraSpaceForNewTupels, MAP_PRIVATE);
-				if(newAdd==MAP_FAILED) {
+				void * newAdd = mremap(journalMapAdress,journalMapSize, journalMapSize + EXTRASPACEFORNEWTUPELS, MAP_PRIVATE);
+				if(newAdd==((void *)-1)) {
 					fprintf(stderr, "ERROR: could not remap journal - data loss likely!\n");
 					exit(1);
 				}
-				journalMapSize += extraSpaceForNewTupels;
+				journalMapSize += EXTRASPACEFORNEWTUPELS;
 				journalMapAdress = newAdd;
 			}
 			newBlocks++;
@@ -175,8 +174,6 @@ int main(int argc, char **argv) {
 		free(metafilename);
 	if(journalLineBuffer)
 		free(journalLineBuffer);
-	if(dirtyBuffer) 
-		free(dirtyBuffer);
 
 	printf("\n*** File deduplication of file %s finished ***\n",basename(filename));
 	printf("stored %ld new blocks!\n\n",newBlocks);
