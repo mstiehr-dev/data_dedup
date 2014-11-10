@@ -99,6 +99,7 @@ int main(int argc, char **argv) {
 	while(fread(journalLineBuffer+i*CHUNKSIZE,CHUNKSIZE,1,file)>0){
 		i++; // fread hört auf, wenn es nichts mehr zu lesen gibt 
 	}
+	printf("now the entire file is buffered\n");
 	
 	/* durch den Datenbuffer gehen */ 
 	char md5String [32+1]; // dort landet der Hash
@@ -129,9 +130,11 @@ int main(int argc, char **argv) {
 		for(k=0; k<16; k++) // md5 String bauen 
 			sprintf(&md5String[k*2],"%02x",(unsigned int) md[k]);
 		// hash sichern 
+		printf("prüfe hash\n");
 		long hashInMappedJournal=isHashInMappedJournal(md5String,journalMapAdress,journalEntries);
 		fseek(journal,0,SEEK_END);
 		if(hashInMappedJournal==-1) {
+			printf("gonna add new hash\n");
 			// neuer hash -> anhängen 
 			hashIDforMetafile = journalEntries; // der neue Zeilenindex wird ins Metafile geschrieben 
 			struct datensatz tupel; // Datensatz bauen 
@@ -143,6 +146,7 @@ int main(int argc, char **argv) {
 			//fwrite(journalLineBuffer+bytesRead, current_read, 1, storage); // block wegschreiben
 			metaChanged = TRUE; 
 		} else { // hash ist bereits bekannt, kann wieder verwendet werden 
+			printf("yeah, alread got this one\n");
 			hashIDforMetafile = hashInJournal; // der vorhandene Zeilenindex wird gesichert 
 		}
 		/* datei-index aktualisieren */
