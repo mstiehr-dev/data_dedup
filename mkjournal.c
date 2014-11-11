@@ -36,7 +36,7 @@ int main(int argc, char **argv) {
 	for(i=0; i<size; i++) {
 		memcpy(add+i*sizeof(struct datensatz), &tupels[i],sizeof(struct datensatz));
 		//fwrite(&tupels[i], sizeof(struct datensatz),1,f);
-		printf("%i\n",i);
+		printf("%i: %ld;%s;%i\n",i, &tupels[i].blocknummer, &tupels[i].hash, &tupels[i].length);
 	}
 	munmap(add, size*sizeof(struct datensatz));
 
