@@ -26,7 +26,7 @@ int main(int argc, char **argv) {
 	long newFileLength = oldFileLength + size*sizeof(struct datensatz);
 	// datei etwas größer machen 
 	ftruncate(fileno(f), newFileLength);
-	void * add = mmap(0, size*sizeof(struct datensatz), PROT_WRITE, MAP_PRIVATE, fileno(f), 0);
+	void * add = mmap(0, newFileLength, PROT_WRITE, MAP_PRIVATE, fileno(f), 0);
 	if(add==MAP_FAILED) {
 		fprintf(stderr, "ERROR: could not map file\n");
 		perror("mmap():");
@@ -38,6 +38,7 @@ int main(int argc, char **argv) {
 		//fwrite(&tupels[i], sizeof(struct datensatz),1,f);
 		printf("%i: %ld;%s;%i\n",i, &tupels[i].blocknummer, &tupels[i].hash, &tupels[i].length);
 	}
+	msync(add, newFileLength, MS_SYNC);
 	munmap(add, size*sizeof(struct datensatz));
 
 // datei wieder kleiner machen 
