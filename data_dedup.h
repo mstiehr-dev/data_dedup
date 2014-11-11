@@ -3,7 +3,7 @@
 
 
 	#define __ProjSem_
-
+	#define _GNU_SOURCE
 	#include <stdio.h>
 	#include <stdlib.h>
 	#include <unistd.h>
@@ -11,7 +11,7 @@
 	#include <sys/types.h>
 	#include <string.h>
 	#include <libgen.h> /* basename() */
-
+	#include <fcntl.h>
 	#include <openssl/md5.h>
 	#include <sys/mman.h>
 
@@ -28,7 +28,7 @@
 	#define FALSE 0
 
 	struct datensatz {
-		long blocknummer;
+		unsigned long blocknummer;
 		char hash[33];
 		unsigned short length;
 	};

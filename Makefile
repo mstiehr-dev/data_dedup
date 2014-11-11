@@ -1,11 +1,13 @@
 CC=gcc
 LDFLAGS=-lssl -lcrypto
 
-all: data_dedup.o deduplicate.o assemble.o display_journal.o readjournal.o
+all: data_dedup.o deduplicate.o assemble.o display_journal.o readjournal.o mkjournal.o maptest.o
 	$(CC) data_dedup.o deduplicate.o -o deduplicate $(LDFLAGS)
 	$(CC) data_dedup.o assemble.o -o assemble $(LDFLAGS)
 	$(CC) data_dedup.o display_journal.o -o displayjournal $(LDFLAGS)
 	$(CC) data_dedup.o readjournal.o -o readjournal $(LDFLAGS)
+	$(CC) data_dedup.o mkjournal.o -o mkjournal $(LDFLAGS)
+	$(CC) data_dedup.o maptest.o -o maptest $(LDFLAGS)
 
 
 data_dedup.o: data_dedup.c data_dedup.h
@@ -23,6 +25,12 @@ display_journal.o: display_journal.c data_dedup.h
 
 readjournal.o: readjournal.c data_dedup.h
 	$(CC) -c readjournal.c $(LDFLAGS)
+	
+mkjournal.o: mkjournal.c data_dedup.h
+	$(CC) -c mkjournal.c $(LDFLAGS)
+
+maptest.o: maptest.c data_dedup.h
+	$(CC) -c maptest.c $(LDFLAGS)
 
 clean:
 	rm *.o

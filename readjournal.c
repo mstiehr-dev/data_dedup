@@ -7,11 +7,6 @@
 
 #define _GNU_SOURCE
 
-#include <stdio.h>
-#include <stdlib.h>
-#include <unistd.h>
-#include <sys/mman.h>
-
 #include "data_dedup.h"
 
 int main(int argc, char **argv) {
