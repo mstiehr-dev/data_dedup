@@ -23,6 +23,7 @@ int main(int argc, char **argv) {
 	}
 	fseek(f,0,SEEK_END);
 	long oldFileLength = ftell(f);
+	fseek(f,0,SEEK_SET);
 	long newFileLength = oldFileLength + size*sizeof(struct datensatz);
 	// datei etwas größer machen 
 	ftruncate(fileno(f), newFileLength);
