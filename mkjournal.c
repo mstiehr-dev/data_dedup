@@ -11,9 +11,9 @@ int main(int argc, char **argv) {
 	struct datensatz tupels[size];
 	int i;
 	for(i=0; i<size; i++) {
-		tupels[i].blocknummer = i * 34;
+		tupels[i].blocknummer = (long) i;
 		sprintf(tupels[i].hash, "hash%i", i);
-		tupels[i].length = i;
+		tupels[i].length = (short) i;
 	}
 	char * fname = "./binaryTestJournal.dat";
 	FILE *f = fopen(fname, "w+b");
@@ -37,7 +37,7 @@ int main(int argc, char **argv) {
 	for(i=0; i<size; i++) {
 		memcpy(add+i*sizeof(struct datensatz), &tupels[i],sizeof(struct datensatz));
 		//fwrite(&tupels[i], sizeof(struct datensatz),1,f);
-		printf("%i: %ld;%s;%i\n",i, &tupels[i].blocknummer, &tupels[i].hash, &tupels[i].length);
+		printf("%i: %ld;%s;%d\n",i, &tupels[i].blocknummer, &tupels[i].hash, &tupels[i].length);
 	}
 	msync(add, newFileLength, MS_SYNC);
 	munmap(add, size*sizeof(struct datensatz));
