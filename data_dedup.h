@@ -28,9 +28,9 @@
 	#define FALSE 0
 
 	struct datensatz {
-		unsigned long blocknummer;
+		long blocknummer;
 		char hash[33];
-		unsigned short length;
+		short length;
 	};
 
 	#define JOURNALLINELENGTH sizeof(struct datensatz) //sizeof(long) + 33*sizeof(char) + sizeof(unsigned short)
