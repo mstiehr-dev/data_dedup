@@ -21,7 +21,11 @@ int main(int argc, char **argv) {
 		fprintf(stderr, "ERROR: could not open %s", fname);
 		exit(1);
 	}
-	fwrite(" ",1,1,f);
+	fseek(f,0,SEEK_END);
+	long oldFileLength = ftell(f);
+	long newFileLength = oldFileLength + size*sizeof(struct datensatz);
+	// datei etwas größer machen 
+	ftruncate(fileno(f), newFileLength);
 	void * add = mmap(0, size*sizeof(struct datensatz), PROT_WRITE, MAP_PRIVATE, fileno(f), 0);
 	if(add==MAP_FAILED) {
 		fprintf(stderr, "ERROR: could not map file\n");
@@ -35,6 +39,9 @@ int main(int argc, char **argv) {
 		printf("%i\n",i);
 	}
 	munmap(add, size*sizeof(struct datensatz));
+
+// datei wieder kleiner machen 
+
 	fclose(f);
 	printf("kkthxbai\n");
 	return 0;
