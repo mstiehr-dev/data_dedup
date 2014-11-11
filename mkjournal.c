@@ -11,9 +11,9 @@ int main(int argc, char **argv) {
 	struct datensatz tupels[size];
 	int i;
 	for(i=0; i<size; i++) {
-		tupels[i].blocknummer = i * 34L;
+		tupels[i].blocknummer = i * 34UL;
 		sprintf(tupels[i].hash, "hash%i", i);
-		tupels[i].length = i;
+		tupels[i].length = (unsigned short) i;
 	}
 	char * fname = "./binaryTestJournal.dat";
 	FILE *f = fopen(fname, "w+b");
