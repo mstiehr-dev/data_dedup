@@ -101,7 +101,7 @@ startZeit = time(NULL);
 	int current_read = 0; // wie viele Bytes aktuell vorhanden sind 
 	size_t bytesRead; // Summe der konsumierten Bytes 
 	long run = 0;  // Durchlauf
-	long newBlocks = 0; // Blöcke, die neu ins Journal aufgenommen wurden 
+	long newBytes = 0; // Blöcke, die neu ins Journal aufgenommen wurden 
 	char metaFileChanged;
 	long infoForMetaFile;
 	MD5_CTX md5Context;
@@ -146,7 +146,7 @@ startZeit = time(NULL);
 		// Informationen ins Metafile schreiben
 		fprintf(metaFile, "%ld\n", infoForMetaFile);
 		if(metaFileChanged) {
-			newBlocks++;
+			newBytes += current_read;
 			storageFileLen += current_read;
 		}
 		bytesRead += current_read;
@@ -167,6 +167,6 @@ startZeit = time(NULL);
 	if(metaFileName) free(metaFileName);
 	fcloseall();
 	printf("\n\n*** successfully deduplicated \"%s\" in %.1fs [%.3f MB/s] ***\n", inputFileName, laufZeit, speed);
-	printf("*** added %ld Bytes to storage dump ***\n",bytesRead);
+	printf("*** added %ld Bytes to storage dump ***\n",newBytes);
 	return 0;
 }
