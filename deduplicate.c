@@ -16,6 +16,7 @@ int main(int argc, char **argv) {
 	// DIE ZU DEDUPLIZIERENDE DATEI
 	FILE *inputFile = fopen(inputFileName, "rb");
 	if(inputFile==NULL) {
+		fprintf(stderr,"ERROR: could not open %s!\n",inputFileName);
 		perror("fopen()");
 		exit(1);
 	}
@@ -31,6 +32,7 @@ int main(int argc, char **argv) {
 	// DIE INDEXDATEI ÜBER ALLE HASHES (JOURNAL)
 	FILE *journalFile = fopen(JOURNALFILE,"a+b");
 	if(journalFile==NULL) {
+		fprintf(stderr,"ERROR: could not open %s!\n",journalFileName);
 		perror("fopen()");
 		exit(1);
 	}
@@ -60,6 +62,7 @@ int main(int argc, char **argv) {
 	}
 	metaFile = fopen(metaFileName,"wt"); // nur schreiben, falls existent, löschen 
 	if(metaFile==NULL) {
+		fprintf(stderr,"ERROR: could not open %s!\n",metaFileName);
 		perror("fopen()");
 		exit(1);
 	}
@@ -68,6 +71,7 @@ int main(int argc, char **argv) {
 	// DATENHALDE ÖFFNEN
 	FILE *storageFile = fopen(STORAGEDUMP, "a+b");
 	if(storageFile==NULL) {
+		fprintf(stderr,"ERROR: could not open %s!\n",storageFileName);
 		perror("ERROR: could not open storage dump file");
 		exit(1);
 	}

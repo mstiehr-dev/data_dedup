@@ -2,7 +2,7 @@ CC=gcc
 LDFLAGS=-lssl -lcrypto
 
 all: data_dedup.o deduplicate.o displayjournal.o reassemble.o
-	mkdir bin restore metafiles data 2>/dev/null
+	sh prepare.sh
 	$(CC) data_dedup.o deduplicate.o -o bin/deduplicate $(LDFLAGS) -Wall
 	$(CC) data_dedup.o displayjournal.o -o bin/displayjournal $(LDFLAGS) -Wall
 	$(CC) data_dedup.o reassemble.o -o bin/reassemble $(LDFLAGS) -Wall
