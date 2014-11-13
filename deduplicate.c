@@ -25,6 +25,7 @@ int main(int argc, char **argv) {
 		exit(1);
 	}
 	off_t inputFileLen = inputFileStats.st_size;
+	double inputFileLenMB = inputFileLen/(1024*1024.0);
 	
 	
 	// DIE INDEXDATEI ÜBER ALLE HASHES (JOURNAL)
@@ -85,7 +86,7 @@ int main(int argc, char **argv) {
 	// STATISTIK
 	off_t journalEntries = journalFileLen / sizeof(journalentry);	
 	
-	
+startZeit = time(NULL);	
 	// DIE EINGABEDATEI EINLESEN 
 	char *inputFileBuffer = malloc(sizeof(char)*inputFileLen);
 	int i=0;
@@ -101,7 +102,7 @@ int main(int argc, char **argv) {
 	long infoForMetaFile;
 	MD5_CTX md5Context;
 	unsigned char md[16];
-	printf("deduplicating \"%s\"\n",inputFileName);
+	printf("deduplicating \"%s\" [%.3f MB]\n",inputFileName, inputFileLenMB);
 	for(bytesRead=0; bytesRead<inputFileLen;) {
 		metaFileChanged = FALSE;
 		current_read = (CHUNKSIZE<=(inputFileLen-bytesRead)) ? CHUNKSIZE : inputFileLen-bytesRead;
@@ -116,7 +117,7 @@ int main(int argc, char **argv) {
 		// Testen, ob der errechnete Hash bereits bekannt ist
 		long hashInJournalPos = isHashInMappedJournal(md5String, journalMapAdd, journalEntries);
 		if(hashInJournalPos==-1) { // DER HASH IST UNBEKANNT -> MUSS ANGEFÜGT WERDEN 
-printf("!");
+//printf("!");
 			infoForMetaFile = journalEntries; // in diesem Datensatz wird sich der neue Hash befinden
 			journalentry record; // neuen Eintrag bauen 
 			record.block = storageFileLen;
@@ -135,7 +136,7 @@ printf("!");
 			}
 			//printf("%li;%32s;%i\n",record.block, md5String, record.len);
 		} else { // DER HASH IST BEREITS BEKANNT
-printf(".");
+//printf(".");
 			infoForMetaFile = hashInJournalPos;
 		}
 		// Informationen ins Metafile schreiben
@@ -156,8 +157,11 @@ printf(".");
 		perror("ftruncate()");
 		exit(1);
 	}
+	laufZeit = difftime(time(NULL),startZeit);
+	if(laufZeit==0) laufZeit=1.0;
+	double speed = inputFileLenMB/laufZeit;
 	if(metaFileName) free(metaFileName);
 	fcloseall();
-	printf("\n\n*** successfully deduplicated \"%s\" ***\n", inputFileName);
+	printf("\n\n*** successfully deduplicated \"%s\" in %.1fs [%.3f MB/s] ***\n", inputFileName, laufZeit, speed);
 	return 0;
 }

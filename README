@@ -27,4 +27,4 @@ assemble:
 	*** TODO *** 
 	 + Einrichten, dass nicht die ganze Originaldatei auf einmal eingelesen werden muss,
 	   sondern Schrittweise (bspw. 20M pro Durchlauf) 
-	 	
+	 + die Zeit messen -> am Ende Geschwindigkeit ausgeben 	

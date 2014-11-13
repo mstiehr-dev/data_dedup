@@ -15,7 +15,7 @@
 	#include <openssl/md5.h>
 	#include <sys/mman.h>
 	#include <errno.h>
-
+	#include <time.h>
 
 	#define CHUNKSIZE 512
 
@@ -33,6 +33,10 @@
 		char hash[32+1];
 		short len;
 	} journalentry;
+
+	time_t startZeit, endZeit;
+	double laufZeit;
+
 
 	#define spareEntries 10000
 	#define auxSpace spareEntries*sizeof(journalentry)
