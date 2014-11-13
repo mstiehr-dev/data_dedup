@@ -32,7 +32,7 @@ int main(int argc, char **argv) {
 	// DIE INDEXDATEI ÜBER ALLE HASHES (JOURNAL)
 	FILE *journalFile = fopen(JOURNALFILE,"a+b");
 	if(journalFile==NULL) {
-		fprintf(stderr,"ERROR: could not open %s!\n",journalFileName);
+		fprintf(stderr,"ERROR: could not open %s!\n",JOURNALFILE);
 		perror("fopen()");
 		exit(1);
 	}
@@ -71,7 +71,7 @@ int main(int argc, char **argv) {
 	// DATENHALDE ÖFFNEN
 	FILE *storageFile = fopen(STORAGEDUMP, "a+b");
 	if(storageFile==NULL) {
-		fprintf(stderr,"ERROR: could not open %s!\n",storageFileName);
+		fprintf(stderr,"ERROR: could not open %s!\n",STORAGEDUMP);
 		perror("ERROR: could not open storage dump file");
 		exit(1);
 	}
