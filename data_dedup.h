@@ -29,8 +29,8 @@
 	#define FALSE 0
 
 	typedef struct {
-		long block;
-		char hash[32+1];
+		long  block;
+		char  hash[32+1];
 		short len;
 	} journalentry;
 
@@ -43,6 +43,7 @@
 
 	// FUNKTIONEN 
 	void * mapFile(int fd, off_t len, int aux, off_t *saveLen);
+	long isHashInMappedJournal(char *hash, void * add, long records)
 
 #endif
 
