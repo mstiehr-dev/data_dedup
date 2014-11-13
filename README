@@ -22,3 +22,9 @@ assemble:
 	und an der zieldatei angefügt werden 
 
 
+	
+	
+	*** TODO *** 
+	 + Einrichten, dass nicht die ganze Originaldatei auf einmal eingelesen werden muss,
+	   sondern Schrittweise (bspw. 20M pro Durchlauf) 
+	 	

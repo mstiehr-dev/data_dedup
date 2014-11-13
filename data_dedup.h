@@ -14,41 +14,42 @@
 	#include <fcntl.h>
 	#include <openssl/md5.h>
 	#include <sys/mman.h>
+	#include <errno.h>
 
 
 	#define CHUNKSIZE 512
 
 	// allgemeine dateien 
-	#define JOURNALFILE "./journal.dat"
-	#define STORAGEDUMP "./storage.dat"
+	#define JOURNALFILE "./data/journal.dat"
+	#define STORAGEDUMP "./data/storage.dat"
 	#define RESTOREDIR "./restored/"
 	#define METADIR "./metafiles/"
 
 	#define TRUE  1
 	#define FALSE 0
 
-	struct datensatz {
-		long blocknummer;
-		char hash[33];
-		short length;
-	};
+	typedef struct {
+		long block;
+		char hash[32+1];
+		short len;
+	} journalentry;
 
-	#define JOURNALLINELENGTH sizeof(struct datensatz) //sizeof(long) + 33*sizeof(char) + sizeof(unsigned short)
-#define EXTRASPACEFORNEWTUPELS 100*JOURNALLINELENGTH
-	
-	struct stat inputfile_statbuffer;
+	#define spareEntries 10000
+	#define auxSpace spareEntries*sizeof(journalentry)
 
-	size_t addedTupels;
+	// FUNKTIONEN 
+	void * mapFile(int fd, off_t len, int aux, off_t *saveLen);
 
+#endif
+
+/*
 	// Funktionen: 
-	long   isHashInJournal(char *, FILE *);
 	long   isHashInMappedJournal(char *, void *, long );
 	char * buildString3s(const char *, const char *, const char *);
 
 	// Variablen
 	long inputFileSize;
 	long journalLineNumber; // Zeilenindex des Journals
-	long hashInJournal; // nummer der zeile, in der ein hash steht
 	long hashIDforMetafile;
 	long storageBlockPosition; // Anfang des Datenblocks im Storagedump
 	long blockLength;
@@ -59,6 +60,5 @@
 	size_t journalLineLength;// = sizeof(size_t) + 33*sizeof(char) + sizeof(long);
 	int 	  retVal;
 
-	
+	*/
 
-#endif
