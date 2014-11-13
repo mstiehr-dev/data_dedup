@@ -46,23 +46,3 @@
 
 #endif
 
-/*
-	// Funktionen: 
-	long   isHashInMappedJournal(char *, void *, long );
-	char * buildString3s(const char *, const char *, const char *);
-
-	// Variablen
-	long inputFileSize;
-	long journalLineNumber; // Zeilenindex des Journals
-	long hashIDforMetafile;
-	long storageBlockPosition; // Anfang des Datenblocks im Storagedump
-	long blockLength;
-	char *    journalLineBuffer;
-	char *    filename;
-	char *    metafilename;
-	char *	  restorefilename;
-	size_t journalLineLength;// = sizeof(size_t) + 33*sizeof(char) + sizeof(long);
-	int 	  retVal;
-
-	*/
-
