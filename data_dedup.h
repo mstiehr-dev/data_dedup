@@ -43,7 +43,7 @@
 
 	// FUNKTIONEN 
 	void * mapFile(int fd, off_t len, int aux, off_t *saveLen);
-	long isHashInMappedJournal(char *hash, void * add, long records)
+	long isHashInMappedJournal(char *hash, void * add, long records);
 
 #endif
 
