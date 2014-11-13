@@ -167,6 +167,6 @@ startZeit = time(NULL);
 	if(metaFileName) free(metaFileName);
 	fcloseall();
 	printf("\n\n*** successfully deduplicated \"%s\" in %.1fs [%.3f MB/s] ***\n", inputFileName, laufZeit, speed);
-	printf("*** added %l Bytes to storage dump ***\n",bytesRead);
+	printf("*** added %ld Bytes to storage dump ***\n",bytesRead);
 	return 0;
 }
