@@ -95,9 +95,9 @@ int main(int argc, char **argv) {
 startZeit = time(NULL);	
 char * inputFileBuffer;
 	// DIE EINGABEDATEI EINLESEN
-	unsigned int bytesBufferSize = 10*1024*1024; // 10 MB
+	unsigned int bytesBufferSize = 1*1024*1024; // 1 MB
 	off_t bytesActuallyRead = 0L;
-	for(long bytesBuffered = 0L; bytesBuffered<inputFileLen; bytesBuffered += bytesBufferSize) {
+	for(long bytesBuffered = 0L; bytesBuffered<inputFileLen; bytesBuffered += bytesActuallyRead) {
 		inputFileBuffer = malloc(sizeof(char)*bytesBufferSize);
 		if(inputFileBuffer==NULL) {
 			perror("ERROR: could not allocate memory");
@@ -106,14 +106,17 @@ char * inputFileBuffer;
 		bytesActuallyRead = fread(inputFileBuffer,bytesBufferSize,1,inputFile);
 
 	// FÜR JEDEN CHUNK EINEN HASH BERECHNEN UND MIT DEM JOURNAL VERGLEICHEN 
-		char md5String[32+1];
+		char md5String = malloc(sizeof(char)*(32+1));
+		if(md5String==NULL) {
+			perror("ERROR: could not allocate memory for md5String");
+			exit(1);
+		}
 		int current_read = 0; // wie viele Bytes aktuell vorhanden sind 
 		size_t bytesRead; // Summe der konsumierten Bytes 
-		long run = 0;  // Durchlauf
 		long newBytes = 0; // Blöcke, die neu ins Journal aufgenommen wurden 
-		char metaFileChanged;
-		long infoForMetaFile;
-		MD5_CTX md5Context;
+		char metaFileChanged = FALSE;
+		long infoForMetaFile; // enthält die jeweilige Zeilennummer des Journals
+		MD5_CTX md5Context;   // Struktur für die Hash-Berechnung
 		unsigned char md[16];
 		printf("deduplicating \"%s\" [%.3f MB]\n",inputFileName, inputFileLenMB);
 		for(bytesRead=0; bytesRead<bytesActuallyRead;) {
@@ -125,18 +128,18 @@ char * inputFileBuffer;
 			}
 			MD5_Update(&md5Context, inputFileBuffer+bytesRead, current_read);
 			MD5_Final(md, &md5Context);
-			for(i=0;i<16;i++) 
+			for(i=0;i<16;i++)  // String bauen 
 				sprintf(md5String+2*i, "%02x", (unsigned int) md[i]);	
 			// Testen, ob der errechnete Hash bereits bekannt ist
 			long hashInJournalPos = isHashInMappedJournal(md5String, journalMapAdd, journalEntries);
 			if(hashInJournalPos==-1) { // DER HASH IST UNBEKANNT -> MUSS ANGEFÜGT WERDEN 
-	//printf("!");
+	printf("+");
 				infoForMetaFile = journalEntries; // in diesem Datensatz wird sich der neue Hash befinden
 				journalentry record; // neuen Eintrag bauen 
 				record.block = storageFileLen;
 				strncpy(record.hash, md5String, 32+1);
 				record.len = current_read;
-				fwrite(inputFileBuffer+bytesRead, current_read, 1, storageFile); // Daten anfügen
+				fwrite(inputFileBuffer+bytesRead, current_read, 1, storageFile); // Daten an Dump anfügen
 				memcpy(journalMapCurrentAdd, &record, sizeof(journalentry)); // Eintrag im Journal
 				journalMapCurrentAdd += sizeof(journalentry);
 				metaFileChanged = TRUE;
@@ -149,7 +152,7 @@ char * inputFileBuffer;
 				}
 				//printf("%li;%32s;%i\n",record.block, md5String, record.len);
 			} else { // DER HASH IST BEREITS BEKANNT
-	//printf(".");
+	printf(".");
 				infoForMetaFile = hashInJournalPos;
 			}
 			// Informationen ins Metafile schreiben
@@ -159,17 +162,10 @@ char * inputFileBuffer;
 				storageFileLen += current_read;
 			}
 			bytesRead += current_read;
-			if(run++%500==0) {
-				printf("+");
-				fflush(stdout);
-			}	
 		}
-
-
 		if(inputFileBuffer) free(inputFileBuffer);
+		if(md5String) 		free(md5String);
 	}
-	
-
 	// Nachbereitung
 	munmap(journalMapAdd, journalMapLen);
 	/* Datei wieder verkleinern */
