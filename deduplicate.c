@@ -93,6 +93,7 @@ int main(int argc, char **argv) {
 
 // BEGINN DER VERARBEITUNG
 startZeit = time(NULL);	
+long newBytes = 0; // Blöcke, die neu ins Journal aufgenommen wurden 
 char * inputFileBuffer;
 	// DIE EINGABEDATEI EINLESEN
 	unsigned int bytesBufferSize = 1*1024*1024; // 1 MB
@@ -114,7 +115,6 @@ char * inputFileBuffer;
 		}
 		int current_read = 0; // wie viele Bytes aktuell vorhanden sind 
 		size_t bytesRead; // Summe der konsumierten Bytes 
-		long newBytes = 0; // Blöcke, die neu ins Journal aufgenommen wurden 
 		char metaFileChanged = FALSE;
 		long infoForMetaFile; // enthält die jeweilige Zeilennummer des Journals
 		MD5_CTX md5Context;   // Struktur für die Hash-Berechnung
