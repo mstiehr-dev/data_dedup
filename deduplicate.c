@@ -96,15 +96,15 @@ startZeit = time(NULL);
 char * inputFileBuffer;
 	// DIE EINGABEDATEI EINLESEN
 	unsigned int bytesBufferSize = 1*1024*1024; // 1 MB
-	off_t bytesActuallyRead = 0L;
-	for(long bytesBuffered = 0L; bytesBuffered<inputFileLen; bytesBuffered += bytesActuallyRead) {
+	off_t bytesActuallyBuffered = 0L;
+	for(long bytesBuffered = 0L; bytesBuffered<inputFileLen;bytesBuffered+=bytesActuallyBuffered) {
 		inputFileBuffer = malloc(sizeof(char)*bytesBufferSize);
 		if(inputFileBuffer==NULL) {
 			perror("ERROR: could not allocate memory");
 			exit(1);
 		}
-		bytesActuallyRead = fread(inputFileBuffer,bytesBufferSize,1,inputFile);
-
+		fread(inputFileBuffer,1,bytesBufferSize,inputFile);
+		bytesActuallyBuffered = (inputFileLen-bytesBuffered >= bytesBufferSize) ? bytesBufferSize : (inputFileLen-bytesBuffered);
 	// FÜR JEDEN CHUNK EINEN HASH BERECHNEN UND MIT DEM JOURNAL VERGLEICHEN 
 		char md5String = malloc(sizeof(char)*(32+1));
 		if(md5String==NULL) {
