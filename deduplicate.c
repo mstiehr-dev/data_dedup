@@ -97,7 +97,7 @@ char * inputFileBuffer;
 	// DIE EINGABEDATEI EINLESEN
 	unsigned int bytesBufferSize = 1*1024*1024; // 1 MB
 	off_t bytesActuallyBuffered = 0L;
-	for(long bytesBuffered = 0L; bytesBuffered<inputFileLen;bytesBuffered+=bytesActuallyBuffered) {
+	for(long bytesBuffered = 0L; bytesBuffered<inputFileLen; bytesBuffered+=bytesActuallyBuffered) {
 		inputFileBuffer = malloc(sizeof(char)*bytesBufferSize);
 		if(inputFileBuffer==NULL) {
 			perror("ERROR: could not allocate memory");
@@ -119,9 +119,9 @@ char * inputFileBuffer;
 		MD5_CTX md5Context;   // Struktur für die Hash-Berechnung
 		unsigned char md[16];
 		printf("deduplicating \"%s\" [%.3f MB]\n",inputFileName, inputFileLenMB);
-		for(bytesRead=0; bytesRead<bytesActuallyRead;) {
+		for(bytesRead=0; bytesRead<bytesActuallyBuffered;) {
 			metaFileChanged = FALSE;
-			current_read = (CHUNKSIZE<=(bytesActuallyRead-bytesRead)) ? CHUNKSIZE : bytesActuallyRead-bytesRead;
+			current_read = (CHUNKSIZE<=(bytesActuallyBuffered-bytesRead)) ? CHUNKSIZE : bytesActuallyBuffered-bytesRead;
 			if(MD5_Init(&md5Context)==0) {
 				perror("MD5_Init()");
 				exit(1);
