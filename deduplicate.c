@@ -96,9 +96,10 @@ startZeit = time(NULL);
 long newBytes = 0; // Blöcke, die neu ins Journal aufgenommen wurden 
 char * inputFileBuffer;
 	// DIE EINGABEDATEI EINLESEN
-	unsigned int bytesBufferSize = 1*1024*1024; // 1 MB
+	unsigned int bytesBufferSize = 10*1024*1024; // 1 MB
 	off_t bytesActuallyBuffered = 0L;
 	off_t bytesBuffered;
+	printf("deduplicating \"%s\" [%.3f MB]\n",inputFileName, inputFileLenMB);
 	for(bytesBuffered = 0L; bytesBuffered<inputFileLen; bytesBuffered+=bytesActuallyBuffered) {
 		inputFileBuffer = malloc(sizeof(char)*bytesBufferSize);
 		if(inputFileBuffer==NULL) {
@@ -119,7 +120,6 @@ char * inputFileBuffer;
 		long infoForMetaFile; // enthält die jeweilige Zeilennummer des Journals
 		MD5_CTX md5Context;   // Struktur für die Hash-Berechnung
 		unsigned char md[16];
-		printf("deduplicating \"%s\" [%.3f MB]\n",inputFileName, inputFileLenMB);
 		for(bytesRead=0; bytesRead<bytesActuallyBuffered;) {
 			metaFileChanged = FALSE;
 			current_read = (CHUNKSIZE<=(bytesActuallyBuffered-bytesRead)) ? CHUNKSIZE : bytesActuallyBuffered-bytesRead;
