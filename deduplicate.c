@@ -97,7 +97,8 @@ char * inputFileBuffer;
 	// DIE EINGABEDATEI EINLESEN
 	unsigned int bytesBufferSize = 1*1024*1024; // 1 MB
 	off_t bytesActuallyBuffered = 0L;
-	for(long bytesBuffered = 0L; bytesBuffered<inputFileLen; bytesBuffered+=bytesActuallyBuffered) {
+	off_t bytesBuffered;
+	for(bytesBuffered = 0L; bytesBuffered<inputFileLen; bytesBuffered+=bytesActuallyBuffered) {
 		inputFileBuffer = malloc(sizeof(char)*bytesBufferSize);
 		if(inputFileBuffer==NULL) {
 			perror("ERROR: could not allocate memory");
@@ -106,7 +107,7 @@ char * inputFileBuffer;
 		fread(inputFileBuffer,1,bytesBufferSize,inputFile);
 		bytesActuallyBuffered = (inputFileLen-bytesBuffered >= bytesBufferSize) ? bytesBufferSize : (inputFileLen-bytesBuffered);
 	// FÜR JEDEN CHUNK EINEN HASH BERECHNEN UND MIT DEM JOURNAL VERGLEICHEN 
-		char md5String = malloc(sizeof(char)*(32+1));
+		char *md5String = malloc(sizeof(char)*(32+1));
 		if(md5String==NULL) {
 			perror("ERROR: could not allocate memory for md5String");
 			exit(1);
@@ -128,6 +129,7 @@ char * inputFileBuffer;
 			}
 			MD5_Update(&md5Context, inputFileBuffer+bytesRead, current_read);
 			MD5_Final(md, &md5Context);
+			int i;
 			for(i=0;i<16;i++)  // String bauen 
 				sprintf(md5String+2*i, "%02x", (unsigned int) md[i]);	
 			// Testen, ob der errechnete Hash bereits bekannt ist
