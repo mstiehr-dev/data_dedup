@@ -8,6 +8,9 @@
 int main(int argc, char **argv) {
 	if(argc!=2) {
 		fprintf(stderr, "usage: %s <filename>\n",*argv);
+		fprintf(stderr, "output: \n"
+						"\t + -> new block of data\n"
+						"\t . -> known block\n" );
 		exit(1);
 	}
 	char *inputFileName = *(argv+1);
@@ -176,7 +179,7 @@ char * inputFileBuffer;
 		exit(1);
 	}
 	laufZeit = difftime(time(NULL),startZeit);
-	if(laufZeit==0) laufZeit=1.0;
+	if(laufZeit<0.01) laufZeit=0.01;
 	double speed = inputFileLenMB/laufZeit;
 	if(metaFileName) free(metaFileName);
 	fcloseall();
