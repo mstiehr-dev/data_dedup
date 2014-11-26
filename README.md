@@ -6,8 +6,8 @@
 
 
 ##usage
-- deduplicate <filename\>
-- reassemble <metafile\>
+- deduplicate \<filename\>
+- reassemble \<metafile\>
 
 ##legal
 * this software is released under the [BSD 3 License]
