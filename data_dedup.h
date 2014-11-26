@@ -34,7 +34,7 @@
 		short len;
 	} journalentry;
 
-	time_t startZeit, endZeit;
+	time_t startZeit;
 	double laufZeit;
 
 

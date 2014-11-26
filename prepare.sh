@@ -1,3 +1,3 @@
 #!/bin/bash
-mkdir bin data metafiles restore 2>/dev/null
+mkdir data metafiles restored 2>/dev/null
 exit 0
