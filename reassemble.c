@@ -54,6 +54,7 @@ int main(int argc, char **argv) {
 		block = atol(metaFileBuffer);
 		fseek(journalFile, block*sizeof(journalentry),SEEK_SET);
 		fread(&journalEntry, sizeof(journalentry), 1, journalFile);
+		fseek(storageFile, journalEntry.block, SEEK_SET);
 		fread(dataBuffer, journalEntry.len, 1, storageFile);
 		fwrite(dataBuffer,journalEntry.len, 1, restoreFile);
 		if(run++%500==0) {
