@@ -1,9 +1,10 @@
 
 
 ##dependencies
++ ###GNU/Linux
 + gcc
 + libssl-dev
-
++ [cuda-sdk]
 
 ##usage
 - deduplicate \<filename\>
@@ -30,3 +31,4 @@ THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND 
 
 
 [BSD 3 License]: https://tldrlegal.com/license/bsd-3-clause-license-%28revised%29#fulltext
+[cuda-sdk]: http://docs.nvidia.com/cuda/cuda-getting-started-guide-for-linux/
