@@ -1,7 +1,7 @@
 
 
 ##dependencies
-+ ###GNU/Linux
++ **GNU/Linux**
 + gcc
 + libssl-dev
 + [cuda-sdk]
