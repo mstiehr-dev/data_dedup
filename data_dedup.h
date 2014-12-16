@@ -1,9 +1,14 @@
 /* data_dedup.h */
 #ifndef __ProjSem_
 
+/* Makros: 
+ * USE_CUDA
+ */
 
 	#define __ProjSem_
-	#define _GNU_SOURCE
+	#ifndef _GNU_SOURCE
+		#define _GNU_SOURCE
+	#endif
 	#include <stdio.h>
 	#include <stdlib.h>
 	#include <unistd.h>
@@ -44,6 +49,28 @@
 	// FUNKTIONEN 
 	void * mapFile(int fd, off_t len, int aux, off_t *saveLen);
 	long isHashInMappedJournal(char *hash, void * add, long records);
+	char   randChar();
+	char * randString(size_t);
+	float  randFloat();
 
+
+	#ifdef USE_CUDA
+
+		void cudaCheckError(cudaError_t err, const char *file, int line) {
+			if(err!=cudaSuccess) {
+				printf("%s in %s at line %d\n", cudaGetErrorString(err), file, line);
+				exit(EXIT_FAILURE);
+			}
+		}
+		#define CUDA_HANDLE_ERR(err) (cudaCheckError(err,__FILE__, __LINE__))
+		cudaDeviceProp prop;
+		size_t totalGlobalMem; 
+		size_t sharedMemPerBlock;
+		int maxThreadsPerBlock;
+		
+		
+	
+	
+	#endif
 #endif
 
