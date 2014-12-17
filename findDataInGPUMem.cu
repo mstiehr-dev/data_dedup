@@ -6,9 +6,9 @@
 #include "unistd.h" //getopt
 
 /* globale variablen: */
-#define _haystack (10*1024)
-int _blocks;
-int _threads;
+int _haystack = 10;
+int _blocks   = 1;
+int _threads  = 1;
 __constant__ journalentry findMe[1];
 /* hier wird der gesuchte Hash gespeichert
  * __constant__ heißt, dass der Wert in einem Cache der GPU gehalten wird */
@@ -16,7 +16,7 @@ __constant__ journalentry findMe[1];
 
 
 
-__device__ int compareHashes(/*const char *s1, */const char *s2, size_t n) {
+__device__ int compareHashes(const char *s2, size_t n) {
 	const char *c1=findMe[0].hash, *c2=s2;
 	while(n--) {
 		if(*c1!=*c2)
@@ -26,12 +26,12 @@ __device__ int compareHashes(/*const char *s1, */const char *s2, size_t n) {
 	}
 	return 0;
 }
-__global__ void kernel(/*void *wantedEntry, */void *entrySet, int *resp, int entries) {
+__global__ void kernel(void *entrySet, int *resp, int entries) {
 	int idx = threadIdx.x + blockIdx.x * blockDim.x;
-	while(idx<_haystack) { // den wantedhash irgendwo cachen!!! 
+	while(idx<entries) { // den wantedhash irgendwo cachen!!! 
 		if(compareHashes( /*((journalentry *)wantedEntry)->hash, */((journalentry *)entrySet+idx)->hash,32) == 0 ) {
-			// Treffer -> alle anderen können aufhören
-			*resp = idx; // wird ständig überschrieben, weil kernel auch nach treffer nicht terminiert
+			// Treffer
+			*resp = idx;
 			//asm("trap;"); // ekliger abbruch, führt zu fehlern
 			return;
 		}
@@ -50,24 +50,17 @@ int main(int argc, char **argv) {
 	// Command Line Arguments parsen: 
 	int c;
 	opterr = 0;
-	while((c=getopt(argc, argv, "b:t:"))!=-1) { // : -> argument required
+	while((c=getopt(argc, argv, "b:t:h:"))!=-1) { // : -> argument required
 		switch(c) {
 			//case 'h':	_haystack = atoi(optarg); break;
 			case 'b':	if(optarg) _blocks   = atoi(optarg); break;
 			case 't':	if(optarg) _threads  = atoi(optarg); break;
+			case 'h':	if(optarg) _haystack = atoi(optarg); break;
 			default:
 				printf("usage: %s -h <size of _haystack> -b <_blocks> -t <_threads per block>\n",argv[0]);
 				exit(1);
 		}
 	}
-	printf("%d | %d | %d \n", _haystack, _blocks, _threads);
-	exit(0);
-
-
-
-
-
-
 	srand(time(NULL));
 	unsigned int treffer = randFloat() * _haystack; // Dieser Datensatz wird nachher im _haystack gesucht
 	cudaEvent_t start, stop; 
@@ -122,7 +115,9 @@ int main(int argc, char **argv) {
 	int *dev_resp; 
 	CUDA_HANDLE_ERR( cudaMalloc((void**)&dev_resp, sizeof(int)) );
 	CUDA_HANDLE_ERR( cudaMemcpy(dev_resp, &host_resp, sizeof(int), cudaMemcpyHostToDevice) );
-	kernel<<<_blocks,_threads>>>(/*dev_wantedEntry, */dev_data, dev_resp, _haystack);
+	
+	kernel<<<_blocks,_threads>>>(dev_data, dev_resp, _haystack);
+	
 	CUDA_HANDLE_ERR( cudaMemcpy(&host_resp, dev_resp, sizeof(int), cudaMemcpyDeviceToHost) );
 	CUDA_HANDLE_ERR( cudaEventRecord(stop,0) );
 	CUDA_HANDLE_ERR( cudaEventSynchronize(stop) );
@@ -131,9 +126,9 @@ int main(int argc, char **argv) {
 		printf("got your hash in tupel #%d!\n",host_resp);
 	else
 		printf("sorry pal - return value is %d\n", host_resp);
-	printf("### computation took %fms\n",elapsedTime);
-	printf("### Using %d _threads in a (%dx%d) Grid\n", (_blocks*_threads), _blocks, _threads);
-	printf("### _haystack: %d\n",_haystack);
+	printf("\tcomputation took %fms\n",elapsedTime);
+	printf("\tUsing %d _threads in a (%dx%d) Grid\n", (_blocks*_threads), _blocks, _threads);
+	printf("\tHeuhaufen: %d Datensätze\n",_haystack);
 	//CUDA_HANDLE_ERR( cudaFree(dev_wantedEntry) );
 	CUDA_HANDLE_ERR( cudaFree(dev_data) );
 	CUDA_HANDLE_ERR( cudaFree(dev_resp) );
@@ -144,12 +139,7 @@ int main(int argc, char **argv) {
 	return 0;
 }
 
-
-
-
-
-
-
+// ######################################################################################
 
 char randChar() {
 	//liefert ein zufälliges druckbares Zeichen 
