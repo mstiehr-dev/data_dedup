@@ -76,10 +76,6 @@ int main(int argc, char **argv) {
 		strncpy((host_data+i)->hash,tString,32);
 		free(tString);
 	}
-	// künstlich für Duplikat sorgen: 
-	// memcpy(host_data+99, host_data, sizeof(journalentry));
-	//for(i=0; i<HAYSTACK; i++) // Testausgabe 
-	//	printf("%ld -> %s -> %i\n",(host_data+i)->block, (host_data+i)->hash, (host_data+i)->len);
 
 	CUDA_HANDLE_ERR( cudaEventCreate(&start)   );
 	CUDA_HANDLE_ERR( cudaEventCreate(&stop)    );
