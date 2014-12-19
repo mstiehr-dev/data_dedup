@@ -51,9 +51,9 @@
 	// FUNKTIONEN 
 	void * mapFile(int fd, off_t len, int aux, off_t *saveLen);
 	long isHashInMappedJournal(char *hash, void * add, long records);
-	char   randChar();
-	char * randString(size_t n);
-	float  randFloat();
+	char   getRandChar();
+	char * getRandString(size_t n);
+	float  getRandFloat();
 
 
 	#ifdef USE_CUDA
@@ -67,7 +67,7 @@
 		cudaDeviceProp prop;
 		size_t totalGlobalMem; 
 		size_t sharedMemPerBlock;
-		int maxThreadsPerBlock;
+		int max_threadsPerBlock;
 	#endif
 #endif
 
