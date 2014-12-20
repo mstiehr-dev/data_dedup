@@ -12,46 +12,15 @@ int _threads  = 1;  // wird durch Command Line Parameter ersetzt
 __constant__ char findMe[32];
 /* hier wird der gesuchte Hash gespeichert im Constant Memory der GPU gecached */
 
-// GPU Funktionen
-/*
-__device__ int compareHashesAsLong(const void *s2, size_t n) {
-	// die Strings sind 32 Byte lang, deswegen bietet sich der Einsatz von 
-	// long (8 Byte) an
-	const long *c1=(long*)(findMe[0].hash), *c2=(long*)s2;
-	n = (n+sizeof(long)-1)/sizeof(long);
-	while(n--) {
-		if(*c1!=*c2)
-			return (-1); // Differenz ist hier egal
-		c1++;
-		c2++;
-	}
-	return 0;
-}
 __global__ void kernel(void *entrySet, int *result, int entries) {
 	int idx = threadIdx.x + blockIdx.x * blockDim.x;
-	while(idx<entries) { 
-		if(compareHashesAsLong( ((journalentry *)entrySet+idx)->hash,32) == 0 ) {
-			// Treffer
-			*result = idx;
-			//asm("trap;"); // harter abbruch des Kernels, führt zu Fehlern
-			return;
-		}
-		idx += blockDim.x * gridDim.x;
-	}
-	return;
-} 
-*/
-__global__ void kernel(void *entrySet, int *result, int entries) {
-	int idx = threadIdx.x + blockIdx.x * blockDim.x;
-	const long *c1;
-	const long *c2;
-	char n;
-	char diff;
+	const long *c1,*c2;
+	char n, diff;
 	while(idx<entries) { 
 		diff = 0;
 		n=4;
 		c1 = (long *)findMe;
-		c2 = (long *)((journalentry *)entrySet[idx]).hash;
+		c2 = (long *)((journalentry *)entrySet)[idx].hash;
 		while(n--) {
 			if(*c1 != *c2) { // Abweichung
 				diff = 1;
@@ -74,20 +43,23 @@ int main(int argc, char **argv) {
 /* Vorbereitungen */
 	// Command Line Arguments parsen: 
 	int c;
+	unsigned int runs;
 	opterr = 0;
-	while((c=getopt(argc, argv, "b:t:h:"))!=-1) { // : -> argument required
+	while((c=getopt(argc, argv, "b:t:h:c:?"))!=-1) { // : -> argument required
 		switch(c) {
 			//case 'h':	_haystack = atoi(optarg); break;
 			case 'b':	if(optarg) _blocks   = atoi(optarg); break;
 			case 't':	if(optarg) _threads  = atoi(optarg); break;
 			case 'h':	if(optarg) _haystack = atoi(optarg); break;
+			case 'c':	if(optarg) runs		 = atoi(optarg); break;
+			case '?':	printf("gooby pls halp\n"); break;
 			default:
 				printf("usage: %s -h <size of _haystack> -b <_blocks> -t <_threads per block>\n",argv[0]);
 				exit(1);
 		}
 	}
 	srand(time(NULL));
-	unsigned int treffer = getRandFloat() * _haystack; // Dieser Datensatz wird nachher im _haystack gesucht
+	unsigned int treffer; // Dieser Datensatz wird nachher im _haystack gesucht
 	cudaEvent_t start, stop; 
 	float elapsedTime;
 	// wieviel Speicher hat die GPU? 
@@ -127,31 +99,32 @@ int main(int argc, char **argv) {
 	CUDA_HANDLE_ERR( cudaMalloc((void**)&dev_data, _haystack*sizeof(journalentry)) );
 	CUDA_HANDLE_ERR( cudaMemcpy(dev_data, host_data, _haystack*sizeof(journalentry), cudaMemcpyHostToDevice) );
 	
-	
-	//void * dev_wantedEntry; 
-	CUDA_HANDLE_ERR( cudaMemcpyToSymbol(findMe, (host_data+treffer).hash, 32) );
-	//memcpy(&findMe, host_data+treffer, sizeof(journalentry));
-	printf("so we're looking for this hash: [%s]\n", host_data[treffer].hash);
-	//CUDA_HANDLE_ERR( cudaMalloc((void**)&dev_wantedEntry, sizeof(journalentry)) );
-	//CUDA_HANDLE_ERR( cudaMemcpy(dev_wantedEntry, &findMe, sizeof(journalentry), cudaMemcpyHostToDevice) );
-	
 	// außerdem muss der Kernel irgendwo die Antwort speichern können: 
 	int host_result=-1; 
 	int *dev_result; 
 	CUDA_HANDLE_ERR( cudaMalloc((void**)&dev_result, sizeof(int)) );
 	CUDA_HANDLE_ERR( cudaMemcpy(dev_result, &host_result, sizeof(int), cudaMemcpyHostToDevice) );
 	
-	kernel<<<_blocks,_threads>>>(dev_data, dev_result, _haystack);
+	while(runs--) {
+		treffer = getRandFloat() * _haystack;
+		CUDA_HANDLE_ERR( cudaMemcpyToSymbol(findMe, host_data[treffer].hash, 32) );
+		#ifdef DEBUG
+		printf("+ looking for this hash: [%s]\n", host_data[treffer].hash);
+		#endif
+		kernel<<<_blocks,_threads>>>(dev_data, dev_result, _haystack);
+	}
 	
 	CUDA_HANDLE_ERR( cudaMemcpy(&host_result, dev_result, sizeof(int), cudaMemcpyDeviceToHost) );
 	CUDA_HANDLE_ERR( cudaEventRecord(stop,0) );
 	CUDA_HANDLE_ERR( cudaEventSynchronize(stop) );
 	CUDA_HANDLE_ERR( cudaEventElapsedTime(&elapsedTime, start, stop) );
+	/*
 	if(host_result>=0) 
-		printf("got your hash in tupel #%d!\n",host_result);
+		printf("found hash in tupel #%d!\n",host_result);
 	else
-		printf("sorry pal - return value is %d\n", host_result);
-	printf("\tcomputation took %fms\n",elapsedTime);
+		printf("-- Hash NOT FOUND - %d\n", host_result);
+	*/
+	printf("\tGPU computation took %fms\n",elapsedTime);
 	printf("\tUsing %d _threads in a (%dx%d) Grid\n", (_blocks*_threads), _blocks, _threads);
 	printf("\tHeuhaufen: %d Datensätze\n",_haystack);
 	//CUDA_HANDLE_ERR( cudaFree(dev_wantedEntry) );
