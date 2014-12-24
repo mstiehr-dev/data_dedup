@@ -6,15 +6,21 @@
 
 
 int main(int argc, char **argv) {
-	if(argc!=2) {
-		fprintf(stderr, "usage: %s <filename>\n",*argv);
-		fprintf(stderr, "output: \n"
-						"\t + -> new block of data\n"
-						"\t . -> known block\n" );
+	char *inputFileName = NULL;
+	int c;
+	opterr = 0;
+	while((c=getopt(argc, argv, "?f:"))!=-1) { // : -> argument required
+		switch(c) {
+			//case 'h':	_haystack = atoi(optarg); break;
+			case 'f':	if(optarg) inputFileName = optarg; break;
+			case '?':	printf("usage: %s -f <filename>\n", *argv); break;
+			default:	break;
+		}
+	}
+	if(inputFileName==NULL) {
+		printf("ERROR: no input file given - QUIT\n");
 		exit(1);
 	}
-	char *inputFileName = *(argv+1);
-	
 	
 	// DIE ZU DEDUPLIZIERENDE DATEI
 	FILE *inputFile = fopen(inputFileName, "rb");
@@ -29,7 +35,7 @@ int main(int argc, char **argv) {
 		exit(1);
 	}
 	off_t inputFileLen = inputFileStats.st_size;
-	double inputFileLenMB = inputFileLen/(1024*1024.0);
+	double inputFileLenMB = inputFileLen/(1024.0*1024.0);
 	
 	
 	// DIE INDEXDATEI ÜBER ALLE HASHES (JOURNAL)
@@ -85,14 +91,19 @@ int main(int argc, char **argv) {
 		exit(1);
 	}
 	off_t storageFileLen = storageFileStats.st_size;
-	
+// #### VERARBEITUNG AUF DEM HOST 
+#ifndef USE_CUDA
 	// DAS JOURNAL MAPPEN (zusätzlicher Platz für 100 Einträge)
 	off_t journalMapLen;
 	void *journalMapAdd = mapFile(fileno(journalFile),journalFileLen, auxSpace, &journalMapLen);
 	void *journalMapCurrentAdd = journalMapAdd + journalFileLen; // Hilfszeiger soll ans Dateiende zeigen 
 	// STATISTIK
 	off_t journalEntries = journalFileLen / sizeof(journalentry);	
-
+#else 
+	// Journaldaten in VRAM geben
+	void * VRAM; 
+	CUDA_HANDLE_ERR( cudaMalloc((void**)&VRAM, journalMapLen) );
+#endif
 
 // BEGINN DER VERARBEITUNG
 startZeit = time(NULL);	
@@ -135,8 +146,16 @@ char * inputFileBuffer;
 			int i;
 			for(i=0;i<16;i++)  // String bauen 
 				sprintf(md5String+2*i, "%02x", (unsigned int) md[i]);	
-			// Testen, ob der errechnete Hash bereits bekannt ist
-			long hashInJournalPos = isHashInMappedJournal(md5String, journalMapAdd, journalEntries);
+// Testen, ob der errechnete Hash bereits bekannt ist
+// #### HASH SUCHE 
+			long hashInJournalPos = -1L;
+#ifndef USE_CUDA
+			hashInJournalPos = isHashInMappedJournal(md5String, journalMapAdd, journalEntries);
+#else 
+			// Journal in VRAM bringen 
+
+			hashInJournalPos = isHashInJournalGPU(md5String, VRAM, journalEntries);
+#endif
 			if(hashInJournalPos==-1) { // DER HASH IST UNBEKANNT -> MUSS ANGEFÜGT WERDEN 
 	printf("+");
 				infoForMetaFile = journalEntries; // in diesem Datensatz wird sich der neue Hash befinden

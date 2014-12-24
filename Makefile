@@ -11,7 +11,7 @@ all: data_dedup.o deduplicate.o displayjournal.o reassemble.o
 data_dedup.o: data_dedup.c data_dedup.h
 	$(CC) -c data_dedup.c $(LDFLAGS)
 
-deduplicate.o: deduplicate.c data_dedup.o
+deduplicate.o: deduplicate.c data_dedup.o data_dedup_cuda.cu
 	$(CC) -c deduplicate.c $(LDFLAGS)
 
 displayjournal.o: displayjournal.c data_dedup.o

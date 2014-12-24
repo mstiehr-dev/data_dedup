@@ -50,4 +50,31 @@ void * mapFile(int fd, off_t len, int aux, off_t *saveLen) {
 }
 
 
+char getRandChar() {
+	//liefert ein zufälliges druckbares Zeichen 
+	/* Druckbare Zeichen beginnen bei 32 (A) und enden bei 126 (~) -> Spanne von 94 */
+	const char start = 'A';
+	const char end   = '~';
+	const char range = end-start;
+	char  c = 32 + getRandFloat()*range; 
+	return c;
+}
+
+char * getRandString(size_t n) {
+	// liefert eine zufällige Zeichenkette 
+	char *str = (char *)malloc(n*sizeof(char)+1);
+	if(str==NULL) {
+		perror("malloc() failed in getRandString()");
+		exit(1);
+	}
+	str[n] = '\0'; // Stringende 
+	while(n--)
+		str[n] = getRandChar();
+	return str;
+}
+
+float getRandFloat() { // liefert eine Zufallszahl zwischen 0 und 1 (inklusive) 
+	return ((float)rand())/RAND_MAX;
+}
+
 

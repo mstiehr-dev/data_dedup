@@ -5,6 +5,9 @@
 #include "data_dedup.h" 
 #include <unistd.h>
 
+int mymemcmp(const void *, const void *, size_t);
+
+
 int main(int argc, char **argv) {
 
 	unsigned int runs;

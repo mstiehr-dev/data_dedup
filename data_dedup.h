@@ -68,6 +68,7 @@
 		size_t totalGlobalMem; 
 		size_t sharedMemPerBlock;
 		int max_threadsPerBlock;
+		__shared__ char goldenHash[32];
 	#endif
 #endif
 
