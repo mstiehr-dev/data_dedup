@@ -56,19 +56,5 @@
 	float  getRandFloat();
 
 
-	#ifdef USE_CUDA
-		static void cudaCheckError(cudaError_t err, const char *file, int line) {
-			if(err!=cudaSuccess) {
-				printf("%s in %s at line %d\n", cudaGetErrorString(err), file, line);
-				exit(EXIT_FAILURE);
-			}
-		}
-		#define CUDA_HANDLE_ERR(err) (cudaCheckError(err,__FILE__, __LINE__))
-		cudaDeviceProp prop;
-		size_t totalGlobalMem; 
-		size_t sharedMemPerBlock;
-		int max_threadsPerBlock;
-		__shared__ char goldenHash[32];
-	#endif
 #endif
 

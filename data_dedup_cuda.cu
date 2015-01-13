@@ -1,6 +1,9 @@
 /* data_dedup_cuda.cu */
 
-#include "data_dedup.h";
+#include "data_dedup.h"
+#include "data_dedup.cuh"
+
+
 
 __global__ void kernel(void *entrySet, long *result, int entries) {
 	// implementiert memcmp auf Basis von <long> Vergleichen 
@@ -11,7 +14,7 @@ __global__ void kernel(void *entrySet, long *result, int entries) {
 		diff = 0; // FALSE
 		n=32/sizeof(long); // 4 Vergleiche 
 		// Pointer jeweils auf den Anfang setzen 
-		c1 = (long *)findMe;
+		c1 = (long *)goldenHash;
 		c2 = (long *)((journalentry *)entrySet)[idx].hash;
 		while(n--) {
 			if(*c1 != *c2) { // Abweichung
@@ -33,7 +36,7 @@ __global__ void kernel(void *entrySet, long *result, int entries) {
 
 __host__ long isHashInJournalGPU(char *hash, void *haystack, int stacksize) {
 	CUDA_HANDLE_ERR( cudaMemcpyToSymbol(goldenHash, hash, 32) ); // die gesuchte Prüfsumme wird in den Cache der GPU gebracht 
-	long result = -1;
-	kernel<<1,1>>(haystack, &result, stacksize);
+	long result = -1L;
+	kernel<<<blocks,threadsPerBlock>>>(haystack, &result, stacksize);
 	return result;
 }

@@ -4,7 +4,6 @@
 #include "data_dedup.h"
 
 
-
 int main(int argc, char **argv) {
 	char *inputFileName = NULL;
 	int c = 0;
@@ -19,6 +18,7 @@ int main(int argc, char **argv) {
 	}
 	if(inputFileName==NULL) {
 		printf("ERROR: no input file given - QUIT\n");
+		printf("See %s -h for help!\n",argv[0]);
 		exit(1);
 	}
 	
@@ -52,6 +52,7 @@ int main(int argc, char **argv) {
 		exit(1);
 	}
 	off_t journalFileLen = journalFileStats.st_size;
+	off_t journalEntries = journalFileLen / sizeof(journalentry);	
 	
 	
 	// STELLVERTRETER FÜR DIE DEDUPLIZIERTE DATEI (METAFILE) 
@@ -102,10 +103,9 @@ int main(int argc, char **argv) {
 	void *journalMapAdd = mapFile(fileno(journalFile),journalFileLen, auxSpace, &journalMapLen);
 	void *journalMapCurrentEnd = journalMapAdd + journalFileLen; // Hilfszeiger soll ans Dateiende zeigen 
 	// STATISTIK
-	off_t journalEntries = journalFileLen / sizeof(journalentry);	
 #else 
 	// Journaldaten in VRAM geben
-	if(journalMapLen > 1000000) {
+	if(journalFileLen> 1000000) {
 		// Datenmenge übersteigt Grafikspeicher 
 		printf( "Das Datenvolumen übersteigt den Grafikspeicher.\n"
 				"In der aktuellen Version wird dieser Fall nicht unterstützt. Beende.\n");
@@ -113,7 +113,7 @@ int main(int argc, char **argv) {
 		exit(2);
 	}
 	void * VRAM; 
-	CUDA_HANDLE_ERR( cudaMalloc((void**)&VRAM, journalMapLen) );
+	CUDA_HANDLE_ERR( cudaMalloc((void**)&VRAM, journalFileLen) );
 #endif
 
 // BEGINN DER VERARBEITUNG
@@ -130,7 +130,8 @@ char * inputFileBuffer; // dort wird die Datei in Stückchen gepuffert
 	for(bytesBufferedTotal = 0L; bytesBufferedTotal<inputFileLen; bytesBufferedTotal+=bytesActuallyBuffered) {
 		inputFileBuffer = malloc(sizeof(char)*bytesBufferSize);
 		if(inputFileBuffer==NULL) {
-			perror("ERROR: could not allocate %i bytes of memory",bytesBufferSize);
+			printf("ERROR: could not allocate %i bytes of memory",bytesBufferSize);
+			perror("malloc");
 			fcloseall();
 			exit(1);
 		}
