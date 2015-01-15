@@ -96,19 +96,18 @@ int main(int argc, char **argv) {
 	
 	
 	
-// #### VERARBEITUNG AUF DEM HOST 
-#ifndef USE_CUDA
+// #### VERARBEITUNG AUF DEM HOST
 	// DAS JOURNAL MAPPEN (zusätzlicher Platz für 100 Einträge)
 	off_t journalMapLen = 0L;
 	void *journalMapAdd = mapFile(fileno(journalFile),journalFileLen, auxSpace, &journalMapLen);
 	void *journalMapCurrentEnd = journalMapAdd + journalFileLen; // Hilfszeiger soll ans Dateiende zeigen 
 	// STATISTIK
-#else 
+#ifdef USE_CUDA
 	// Journaldaten in VRAM geben
-	if(journalFileLen> 1000000) {
+	if(journalFileLen> 25675000) {
 		// Datenmenge übersteigt Grafikspeicher 
 		printf( "Das Datenvolumen übersteigt den Grafikspeicher.\n"
-				"In der aktuellen Version wird dieser Fall nicht unterstützt. Beende.\n");
+				"In der aktuellen Version wird dieser Fall werden maximal 25.675 mio. Datensätze unterstützt. Beende.\n");
 		fcloseall();
 		exit(2);
 	}
