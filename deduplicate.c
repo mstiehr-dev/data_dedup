@@ -133,7 +133,7 @@ int main(int argc, char **argv) {
 			fcloseall();
 			exit(1);
 		}
-		bytesActuallyBufferd = fread(inputFileBuffer,1,bytesBufferSize,inputFile); // liest 1*bytesBufferSize aus inputFile nach inputFileBuffer (Rückgabewert ist Anzahl der gelesenen Bytes, wenn size 1 ist )
+		bytesActuallyBuffered = fread(inputFileBuffer,1,bytesBufferSize,inputFile); // liest 1*bytesBufferSize aus inputFile nach inputFileBuffer (Rückgabewert ist Anzahl der gelesenen Bytes, wenn size 1 ist )
 		//bytesActuallyBuffered = (inputFileLen-bytesBufferedTotal >= bytesBufferSize) ? bytesBufferSize : (inputFileLen-bytesBufferedTotal); // ermitteln, wie viel gelesen wurde 
 		
 		// FÜR JEDEN CHUNK EINEN HASH BERECHNEN UND MIT DEM JOURNAL VERGLEICHEN 
@@ -182,7 +182,7 @@ int main(int argc, char **argv) {
 				memcpy(journalMapCurrentEnd, &record, sizeof(journalentry)); // Eintrag im Journal vornehmen 
 			#ifdef USE_CUDA
 				// auch der Datenbestand im Videospeicher muss erweitert werden 
-				CUDA_HANDLE_ERR( cudaMemcpy(VRAM+journalEntries*sizeof(journalentry), &record, sizeof(record), cudaMemcpyHostToDevice) );
+				cudaExtendHashStack(VRAM+journalEntries*sizeof(journalentry),&record);
 			#endif	
 				journalMapCurrentEnd += sizeof(journalentry); // neues Journal-Ende 
 				metaFileChanged = TRUE;

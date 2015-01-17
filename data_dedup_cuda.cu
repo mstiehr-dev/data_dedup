@@ -46,3 +46,7 @@ __host__ void cudaCopyJournal(void *dev, void *host, off_t len) {
 	CUDA_HANDLE_ERR( cudaMalloc((void**)&dev, len) ); // GPU Speicher wird alloziert
 	CUDA_HANDLE_ERR( cudaMemcpy(dev, host, len, cudaMemcpyHostToDevice) ); // Datentransfer von Host Speicher nach VRAM 
 }
+
+__host__ void cudaExtendHashStack(void *add, journalentry *entry) {
+	CUDA_HANDLE_ERR( cudaMemcpy(add, record, sizeof(journalentry), cudaMemcpyHostToDevice) );
+}
