@@ -18,7 +18,7 @@
 		size_t totalGlobalMem; 
 		size_t sharedMemPerBlock;
 		int max_threadsPerBlock;
-		__shared__ char goldenHash[32];
+		__constant__ char goldenHash[33];
 		int blocks = 4;
 		int threadsPerBlock = 256;
 	#endif

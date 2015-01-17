@@ -35,7 +35,7 @@ __global__ void searchKernel(void *entrySet, long *result, int entries) {
 
 
 
-__host__ long isHashInJournalGPU(char *hash, void *haystack, int stacksize) {
+long isHashInJournalGPU(char *hash, void *haystack, int stacksize) {
 	CUDA_HANDLE_ERR( cudaMemcpyToSymbol(goldenHash, hash, 32) ); // die gesuchte Prüfsumme wird in den Cache der GPU gebracht 
 	long result = -1L;
 	searchKernel<<<blocks,threadsPerBlock>>>(haystack, &result, stacksize);
@@ -48,5 +48,5 @@ __host__ void cudaCopyJournal(void *dev, void *host, off_t len) {
 }
 
 __host__ void cudaExtendHashStack(void *add, journalentry *entry) {
-	CUDA_HANDLE_ERR( cudaMemcpy(add, record, sizeof(journalentry), cudaMemcpyHostToDevice) );
+	CUDA_HANDLE_ERR( cudaMemcpy(add, entry, sizeof(journalentry), cudaMemcpyHostToDevice) );
 }
