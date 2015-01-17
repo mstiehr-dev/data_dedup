@@ -54,6 +54,14 @@
 	char   getRandChar();
 	char * getRandString(size_t n);
 	float  getRandFloat();
+#ifdef USE_CUDA
+	long isHashinJournalGPU(char *, void *, int);
+	void cudaCopyJournal(void *, void *, off_t);
+	void cudaExtendHashStack(void *, journalentry *);
+#ifndef CUDA_HANDLE_ERR(err)
+	#define CUDA_HANDLE_ERR(err) (cudaCheckError(err, __FILE__, __LINE__))
+#endif
+#endif
 
 
 #endif
