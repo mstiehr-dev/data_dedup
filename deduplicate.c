@@ -53,6 +53,10 @@ int main(int argc, char **argv) {
 	}
 	off_t journalFileLen = journalFileStats.st_size;
 	off_t journalEntries = journalFileLen / sizeof(journalentry);	
+	off_t journalMapLen = 0L;
+	// Journal mappen + Platz für 100 Einträge 
+	void *journalMapAdd = mapFile(fileno(journalFile),journalFileLen, auxSpace, &journalMapLen);
+	void *journalMapCurrentEnd = journalMapAdd + journalFileLen; // Hilfszeiger soll ans Dateiende zeigen 
 	
 	
 	// STELLVERTRETER FÜR DIE DEDUPLIZIERTE DATEI (METAFILE) 
@@ -97,28 +101,23 @@ int main(int argc, char **argv) {
 	
 	
 // #### VERARBEITUNG AUF DEM HOST
-	// DAS JOURNAL MAPPEN (zusätzlicher Platz für 100 Einträge)
-	off_t journalMapLen = 0L;
-	void *journalMapAdd = mapFile(fileno(journalFile),journalFileLen, auxSpace, &journalMapLen);
-	void *journalMapCurrentEnd = journalMapAdd + journalFileLen; // Hilfszeiger soll ans Dateiende zeigen 
-	// STATISTIK
 #ifdef USE_CUDA
 	// Journaldaten in VRAM geben
-	if(journalFileLen> 25675000) {
+	if(journalMapLen> 1027604480) { // gemessen 
 		// Datenmenge übersteigt Grafikspeicher 
-		printf( "Das Datenvolumen übersteigt den Grafikspeicher.\n"
+		printf( "Das Datenvolumen übersteigt die Speicherkapazität der Grafikkarte.\n"
 				"In der aktuellen Version wird dieser Fall werden maximal 25.675 mio. Datensätze unterstützt. Beende.\n");
 		fcloseall();
 		exit(2);
 	}
-	void * VRAM; 
-	CUDA_HANDLE_ERR( cudaMalloc((void**)&VRAM, journalFileLen) );
+	void * VRAM; // Adresse des Grafikspeichers
+	cudaCopyJournal(VRAM, journalMapAdd, journalMapLen);
 #endif
 
 // BEGINN DER VERARBEITUNG
-startZeit = time(NULL);	
-long newBytes = 0; // Blöcke, die neu ins Journal aufgenommen wurden 
-char * inputFileBuffer; // dort wird die Datei in Stückchen gepuffert 
+	startZeit = time(NULL);	
+	long newBytes = 0; // Blöcke, die neu ins Journal aufgenommen wurden 
+	char * inputFileBuffer; // dort wird die Datei in Stückchen gepuffert 
 	// DIE EINGABEDATEI EINLESEN
 	unsigned int bytesBufferSize = 10*1024*1024; // 10 MB
 	off_t bytesActuallyBuffered = 0L;
@@ -134,8 +133,8 @@ char * inputFileBuffer; // dort wird die Datei in Stückchen gepuffert
 			fcloseall();
 			exit(1);
 		}
-		fread(inputFileBuffer,1,bytesBufferSize,inputFile); // liest 1*bytesBufferSize aus inputFile nach inputFileBuffer (Rückgabewert ist Anzahl der gelesenen Bytes, wenn size 1 ist )
-		bytesActuallyBuffered = (inputFileLen-bytesBufferedTotal >= bytesBufferSize) ? bytesBufferSize : (inputFileLen-bytesBufferedTotal); // ermitteln, wie viel gelesen wurde 
+		bytesActuallyBufferd = fread(inputFileBuffer,1,bytesBufferSize,inputFile); // liest 1*bytesBufferSize aus inputFile nach inputFileBuffer (Rückgabewert ist Anzahl der gelesenen Bytes, wenn size 1 ist )
+		//bytesActuallyBuffered = (inputFileLen-bytesBufferedTotal >= bytesBufferSize) ? bytesBufferSize : (inputFileLen-bytesBufferedTotal); // ermitteln, wie viel gelesen wurde 
 		
 		// FÜR JEDEN CHUNK EINEN HASH BERECHNEN UND MIT DEM JOURNAL VERGLEICHEN 
 		md5String = malloc(sizeof(char)*(32+1));
@@ -147,7 +146,7 @@ char * inputFileBuffer; // dort wird die Datei in Stückchen gepuffert
 		int current_read = 0; // wie viele Bytes aktuell vorhanden sind 
 		size_t bytesRead; // Summe der konsumierten Bytes 
 		char metaFileChanged; // Flag über Modifizierung des Metafiles 
-		long infoForMetaFile = -1; // enthält die jeweilige Zeilennummer des Journals
+		long infoForMetaFile = -1L; // enthält die jeweilige Zeilennummer des Journals
 		MD5_CTX md5Context;   // Struktur für die Hash-Berechnung
 		unsigned char md[16];
 		// Schleife geht in Schritten von 512 Byte über den aktuellen Puffer, berechnet jeweils den Hash und prüft, ob dieser bereits existiert 
@@ -163,15 +162,13 @@ char * inputFileBuffer; // dort wird die Datei in Stückchen gepuffert
 			MD5_Final(md, &md5Context); // hash in md[16] speichern
 			int i;
 			for(i=0;i<16;i++)  // String bauen 
-				sprintf(md5String+2*i, "%02x", (unsigned int) md[i]);	
-// Testen, ob der errechnete Hash bereits bekannt ist
+				sprintf(md5String+2*i, "%02x", (unsigned int) md[i]);
+
 // #### HASH SUCHE 
 			long hashInJournalPos = -1L;
 #ifndef USE_CUDA
 			hashInJournalPos = isHashInMappedJournal(md5String, journalMapAdd, journalEntries);
 #else 
-			// Journal in VRAM bringen 
-
 			hashInJournalPos = isHashInJournalGPU(md5String, VRAM, journalEntries);
 #endif
 			if(hashInJournalPos==-1) { // DER HASH IST UNBEKANNT -> MUSS ANGEFÜGT WERDEN 
@@ -183,6 +180,10 @@ char * inputFileBuffer; // dort wird die Datei in Stückchen gepuffert
 				record.len = current_read; // die Blocklänge 
 				fwrite(inputFileBuffer+bytesRead, current_read, 1, storageFile); // Daten an Dump anfügen
 				memcpy(journalMapCurrentEnd, &record, sizeof(journalentry)); // Eintrag im Journal vornehmen 
+			#ifdef USE_CUDA
+				// auch der Datenbestand im Videospeicher muss erweitert werden 
+				CUDA_HANDLE_ERR( cudaMemcpy(VRAM+journalEntries*sizeof(journalentry), &record, sizeof(record), cudaMemcpyHostToDevice) );
+			#endif	
 				journalMapCurrentEnd += sizeof(journalentry); // neues Journal-Ende 
 				metaFileChanged = TRUE;
 				if(journalEntries*sizeof(journalentry) >= journalMapLen) {

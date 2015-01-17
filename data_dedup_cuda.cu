@@ -5,7 +5,7 @@
 
 
 
-__global__ void kernel(void *entrySet, long *result, int entries) {
+__global__ void searchKernel(void *entrySet, long *result, int entries) {
 	// implementiert memcmp auf Basis von <long> Vergleichen 
 	long idx = threadIdx.x + blockIdx.x * blockDim.x;
 	const long *c1,*c2;
@@ -34,9 +34,15 @@ __global__ void kernel(void *entrySet, long *result, int entries) {
 } 
 
 
+
 __host__ long isHashInJournalGPU(char *hash, void *haystack, int stacksize) {
 	CUDA_HANDLE_ERR( cudaMemcpyToSymbol(goldenHash, hash, 32) ); // die gesuchte Prüfsumme wird in den Cache der GPU gebracht 
 	long result = -1L;
-	kernel<<<blocks,threadsPerBlock>>>(haystack, &result, stacksize);
+	searchKernel<<<blocks,threadsPerBlock>>>(haystack, &result, stacksize);
 	return result;
+}
+
+__host__ void cudaCopyJournal(void *dev, void *host, off_t len) {
+	CUDA_HANDLE_ERR( cudaMalloc((void**)&dev, len) ); // GPU Speicher wird alloziert
+	CUDA_HANDLE_ERR( cudaMemcpy(dev, host, len, cudaMemcpyHostToDevice) ); // Datentransfer von Host Speicher nach VRAM 
 }
