@@ -1,7 +1,19 @@
 /* deduplicate.c */
-
+/*
+nvcc deduplicate.c data_dedup.o data_dedup_cuda.cu -o deduplicateGPU -lssl -lcrypto -DUSE_CUDA
+deduplicate.c: In function ‘main’:
+deduplicate.c:63:23: warning: cast to pointer from integer of different size
+/tmp/tmpxft_00005237_00000000-6_deduplicate.o: In function `main':
+deduplicate.c:(.text+0x508): undefined reference to `cudaCopyJournal'
+deduplicate.c:(.text+0x743): undefined reference to `isHashInJournalGPU'
+deduplicate.c:(.text+0x835): undefined reference to `cudaExtendHashStack'
+deduplicate.c:(.text+0xa99): undefined reference to `CUDA_HANDLE_ERR'
+collect2: ld returned 1 exit status
+make: *** [cuda] Fehler 1
+*/
 
 #include "data_dedup.h"
+#include "data_dedup.cuh"
 
 
 int main(int argc, char **argv) {
