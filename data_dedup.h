@@ -58,7 +58,7 @@
 	long isHashinJournalGPU(char *, void *, int);
 	void cudaCopyJournal(void *, void *, off_t);
 	void cudaExtendHashStack(void *, journalentry *);
-#ifndef CUDA_HANDLE_ERR(err)
+#ifndef CUDA_HANDLE_ERR
 	#define CUDA_HANDLE_ERR(err) (cudaCheckError(err, __FILE__, __LINE__))
 #endif
 #endif

@@ -13,7 +13,7 @@ make: *** [cuda] Fehler 1
 */
 
 #include "data_dedup.h"
-#include "data_dedup.cuh"
+//#include "data_dedup.cuh"
 
 
 int main(int argc, char **argv) {
