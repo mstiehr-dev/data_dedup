@@ -1,35 +1,22 @@
 CC=gcc
 LDFLAGS=-lssl -lcrypto
 
-all: data_dedup.o deduplicate.o displayjournal.o reassemble.o
-	sh prepare.sh
-	$(CC) data_dedup.o deduplicate.o -o deduplicate $(LDFLAGS) -Wall
-	$(CC) data_dedup.o displayjournal.o -o displayjournal $(LDFLAGS) -Wall
-	$(CC) data_dedup.o reassemble.o -o reassemble $(LDFLAGS) -Wall
-
-cuda:	data_dedup_cuda.cu deduplicate.c
+cuda:	
 	sh prepare.sh 
 	cp deduplicate.c deduplicate.cu
 	cp data_dedup.h data_dedup.cuh
-	nvcc -DUSE_CUDA deduplicate.cu data_dedup.c data_dedup_cuda.cu -o deduplicateGPU $(LDFLAGS) 
+	nvcc $(LDFLAGS) -DUSE_CUDA deduplicate.cu data_dedup.c data_dedup_cuda.cu -o deduplicateGPU  
 
-host: data_dedup.o deduplicate.o
-	$(CC) deduplicate.o data_dedup.o -o deduplicateHost
+host: 
+	sh prepare.sh
+	$(CC) $(LDFLAGS) deduplicate.c data_dedup.c -o deduplicateHost
 
-data_dedup.o: data_dedup.c
-	$(CC) -c data_dedup.c $(LDFLAGS)
 
-deduplicate.o: deduplicate.c data_dedup.o data_dedup_cuda.o
-	$(CC) -c deduplicate.c $(LDFLAGS)
+displayjournal: 
+	$(CC) $(LDFLAGS) displayjournal.c data_dedup.c -o displayjournal
 
-data_dedup_cuda.o: data_dedup_cuda.cu
-	nvcc -c data_dedup_cuda.cu
-
-displayjournal.o: displayjournal.c data_dedup.o
-	$(CC) -c displayjournal.c $(LDFLAGS)
-
-reassemble.o: reassemble.c data_dedup.o
-	$(CC) -c reassemble.c $(LDFLAGS)
+reassemble:
+	$(CC) $(LDFLAGS) reassemble.c data_dedup.c -o reassemble
 
 clean:
 	rm -f *.o

@@ -14,6 +14,7 @@ int main(int argc, char **argv) {
 	opterr = 0;
 	while((c=getopt(argc, argv, "?f:"))!=-1) { // : -> argument required
 		switch(c) {
+			case 'h': 	printf("usage: %s -f <filename>\n", *argv); break;
 			case 'f':	if(optarg) inputFileName = optarg; break;
 			case '?':	printf("usage: %s -f <filename>\n", *argv); break;
 			default:	break;
