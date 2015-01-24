@@ -70,7 +70,7 @@ int main(int argc, char **argv) {
 	off_t journalMapLen = 0L;
 	// Journal mappen + Platz für 100 Einträge 
 	void *journalMapAdd = mapFile(fileno(journalFile),journalFileLen, auxSpace, &journalMapLen);
-	void *journalMapCurrentEnd = journalMapAdd + journalFileLen; // Hilfszeiger soll ans Dateiende zeigen 
+	void *journalMapCurrentEnd = ((journalentry *)journalMapAdd) + journalFileLen; // Hilfszeiger soll ans Dateiende zeigen 
 	
 	
 	// STELLVERTRETER FÜR DIE DEDUPLIZIERTE DATEI (METAFILE) 
@@ -124,7 +124,7 @@ int main(int argc, char **argv) {
 		fcloseall();
 		exit(2);
 	}
-	void * VRAM; // Adresse des Grafikspeichers
+	void * VRAM = NULL; // Adresse des Grafikspeichers
 	cudaCopyJournal(VRAM, journalMapAdd, journalMapLen); // auch im VRAM wird ein Puffer reserviert (siehe journalMapLen)
 #endif
 
@@ -140,7 +140,7 @@ int main(int argc, char **argv) {
 	char *md5String = (char *) NULL;
 	// Die Schleife verarbeitet die Eingabedatei in Schritten von <bytesBufferSize> Byte, bis die gesamte Datei gelesen wurde 
 	for(bytesBufferedTotal = 0L; bytesBufferedTotal<inputFileLen; bytesBufferedTotal+=bytesActuallyBuffered) {
-		inputFileBuffer = malloc(sizeof(char)*bytesBufferSize);
+		inputFileBuffer = (char *) malloc(sizeof(char)*bytesBufferSize);
 		if(inputFileBuffer==NULL) {
 			printf("ERROR: could not allocate %i bytes of memory",bytesBufferSize);
 			perror("malloc");
@@ -196,9 +196,9 @@ int main(int argc, char **argv) {
 				memcpy(journalMapCurrentEnd, &record, sizeof(journalentry)); // Eintrag im Journal vornehmen 
 			#ifdef USE_CUDA
 				// auch der Datenbestand im Videospeicher muss erweitert werden 
-				cudaExtendHashStack(VRAM+journalEntries*sizeof(journalentry),&record);
+				cudaExtendHashStack(((journalentry*)VRAM)+journalEntries*sizeof(journalentry),&record);
 			#endif	
-				journalMapCurrentEnd += sizeof(journalentry); // neues Journal-Ende 
+				journalMapCurrentEnd = ((journalentry *)journalMapCurrentEnd) + sizeof(journalentry); // neues Journal-Ende 
 				journalFileChanged = TRUE;
 				if(journalEntries*sizeof(journalentry) >= journalMapLen) {
 				// die Journal-Datei muss vergrößert und erneut gemappt werden 

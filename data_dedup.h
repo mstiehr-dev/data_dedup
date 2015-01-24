@@ -49,6 +49,7 @@
 	#define auxSpace spareEntries*sizeof(journalentry)
 
 	// FUNKTIONEN 
+	const char * buildString3s(const char *, const char *, const char *);
 	void * mapFile(int fd, off_t len, int aux, off_t *saveLen);
 	long isHashInMappedJournal(char *hash, void * add, long records);
 	char   getRandChar();

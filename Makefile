@@ -7,11 +7,11 @@ all: data_dedup.o deduplicate.o displayjournal.o reassemble.o
 	$(CC) data_dedup.o displayjournal.o -o displayjournal $(LDFLAGS) -Wall
 	$(CC) data_dedup.o reassemble.o -o reassemble $(LDFLAGS) -Wall
 
-cuda:	data_dedup_cuda.cu deduplicate.c data_dedup.o
+cuda:	data_dedup_cuda.cu deduplicate.c
 	sh prepare.sh 
 	cp deduplicate.c deduplicate.cu
 	cp data_dedup.h data_dedup.cuh
-	nvcc deduplicate.cu data_dedup.o data_dedup_cuda.cu -o deduplicateGPU $(LDFLAGS) -DUSE_CUDA
+	nvcc -DUSE_CUDA deduplicate.cu data_dedup.c data_dedup_cuda.cu -o deduplicateGPU $(LDFLAGS) 
 
 host: data_dedup.o deduplicate.o
 	$(CC) deduplicate.o data_dedup.o -o deduplicateHost
