@@ -6,6 +6,7 @@
 	#include "data_dedup.h"
 #endif
 
+#define DEBUG
 
 int main(int argc, char **argv) {
 	char *inputFileName = NULL;
@@ -61,7 +62,11 @@ int main(int argc, char **argv) {
 	// Journal mappen + Platz für 100 Einträge 
 	void *journalMapAdd = mapFile(fileno(journalFile),journalFileLen, auxSpace, &journalMapLen);
 	void *journalMapCurrentEnd = ((journalentry *)journalMapAdd) + journalFileLen; // Hilfszeiger soll ans Dateiende zeigen 
-	
+	#ifdef DEBUG
+		printf("JournalFileLen: %ld\n", journalFileLen);
+		printf("JournalEntries: %ld\n", journalEntries);
+		printf("JournalMapLen : %ld\n", journalMapLen);
+	#endif
 	
 	// STELLVERTRETER FÜR DIE DEDUPLIZIERTE DATEI (METAFILE) 
 	char *metaFileName = (char *)buildString3s(METADIR,basename(inputFileName), ".meta");
@@ -182,6 +187,9 @@ int main(int argc, char **argv) {
 				record.block = storageFileLen; // ganz hinten anfügen -> aktuelles Dateiende
 				strncpy(record.hash, md5String, 32+1); // die Prüfsumme wird übernommen
 				record.len = current_read; // die Blocklänge 
+				#ifdef DEBUG
+					printf("%ld -> %s -> %d\n", record.block, record.hash, record.len);
+				#endif
 				fwrite(inputFileBuffer+bytesRead, current_read, 1, storageFile); // Daten an Dump anfügen
 				memcpy(journalMapCurrentEnd, &record, sizeof(journalentry)); // Eintrag im Journal vornehmen 
 			#ifdef USE_CUDA
@@ -207,6 +215,9 @@ int main(int argc, char **argv) {
 				infoForMetaFile = hashInJournalPos; // die zeile des journals, in der der hash gefunden wurde, wird ins metafile übernommen 
 			}
 			// Informationen ins Metafile schreiben
+			#ifdef DEBUG 
+			printf("Schreibe in Metafile: %ld\n", infoForMetaFile);
+			#endif
 			fprintf(metaFile, "%ld\n", infoForMetaFile);
 			if(journalFileChanged) {
 				newBytes += current_read;
