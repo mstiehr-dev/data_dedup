@@ -199,7 +199,7 @@ int main(int argc, char **argv) {
 				// auch der Datenbestand im Videospeicher muss erweitert werden 
 				cudaExtendHashStack(((journalentry*)VRAM)+journalEntries*sizeof(journalentry),&record);
 			#endif	
-				journalMapCurrentEnd = ((journalentry *)journalMapCurrentEnd) + sizeof(journalentry); // neues Journal-Ende 
+				journalMapCurrentEnd = ((journalentry *)journalMapCurrentEnd) + 1; // neues Journal-Ende 
 				journalFileChanged = TRUE;
 				if(journalEntries*sizeof(journalentry) >= journalMapLen) {
 				// die Journal-Datei muss vergrößert und erneut gemappt werden 
