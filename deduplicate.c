@@ -108,8 +108,6 @@ int main(int argc, char **argv) {
 	}
 	off_t storageFileLen = storageFileStats.st_size;
 	
-	
-	
 // #### VERARBEITUNG AUF GPU
 #ifdef USE_CUDA
 	// Journaldaten in VRAM geben
@@ -129,7 +127,6 @@ int main(int argc, char **argv) {
 	long newBytes = 0; // Blöcke, die neu ins Journal aufgenommen wurden 
 	char * inputFileBuffer; // dort wird die Datei in Stückchen gepuffert 
 	// DIE EINGABEDATEI EINLESEN
-	unsigned int bytesBufferSize = 10*1024*1024; // 10 MB
 	off_t bytesActuallyBuffered = 0L;
 	off_t bytesBufferedTotal = 0L;
 	printf("deduplicating \"%s\" [%.3f MB]\n",inputFileName, inputFileLenMB);
@@ -161,6 +158,7 @@ int main(int argc, char **argv) {
 		unsigned char md[16];
 		// Schleife geht in Schritten von 512 Byte über den aktuellen Puffer, berechnet jeweils den Hash und prüft, ob dieser bereits existiert 
 		for(bytesRead=0; bytesRead<bytesActuallyBuffered; ) {
+			time_t start = time(NULL);
 			journalFileChanged = FALSE;
 			current_read = (CHUNKSIZE<=(bytesActuallyBuffered-bytesRead)) ? CHUNKSIZE : bytesActuallyBuffered-bytesRead;
 			if(MD5_Init(&md5Context)==0) { // 1 == success, 0 == fail
@@ -211,8 +209,11 @@ int main(int argc, char **argv) {
 					CUDA_HANDLE_ERR( cudaFree(VRAM) );
 					cudaCopyJournal(VRAM, journalMapAdd, journalMapLen);
 				#endif
+					laufZeit = difftime(time(NULL),start);
+					printf("\nFortschritt: %3.2f\n", (bytesBufferedTotal*100.0)/inputFileLen);
+					double speed = (bytesBufferedTotal/(1024*1024.0))/laufZeit;
+					printf("aktuelle Geschwindigkeit: %.3f MB/s\n", speed);
 				}
-				printf("\nFortschritt: %3.2f\n", (bytesBufferedTotal*100.0)/inputFileLen);
 			} else { // DER HASH IST BEREITS BEKANNT
 				printf("."); fflush(stdout);
 				infoForMetaFile = hashInJournalPos; // die zeile des journals, in der der hash gefunden wurde, wird ins metafile übernommen 

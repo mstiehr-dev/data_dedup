@@ -44,6 +44,7 @@
 	time_t startZeit;
 	double laufZeit;
 
+	unsigned int bytesBufferSize = 128*1024*1024; // 128 MB
 
 	#define spareEntries 10000
 	#define auxSpace spareEntries*sizeof(journalentry)
