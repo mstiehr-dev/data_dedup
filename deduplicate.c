@@ -61,12 +61,12 @@ int main(int argc, char **argv) {
 	off_t journalMapLen = 0L;
 	// Journal mappen + Platz für 100 Einträge 
 	void *journalMapAdd = mapFile(fileno(journalFile),journalFileLen, auxSpace, &journalMapLen);
-	void *journalMapCurrentEnd = ((journalentry *)journalMapAdd) + journalFileLen; // Hilfszeiger soll ans Dateiende zeigen 
+	void *journalMapCurrentEnd = ((char *)journalMapAdd) + journalFileLen; // Hilfszeiger soll ans Dateiende zeigen 
 	#ifdef DEBUG
 		printf("JournalFileLen: %ld\n", journalFileLen);
 		printf("JournalEntries: %ld\n", journalEntries);
 		printf("JournalMapLen : %ld\n", journalMapLen);
-		printf("JournalMapAdd : %p", journalMapAdd);
+		printf("JournalMapAdd : %p\n", journalMapAdd);
 	#endif
 	
 	// STELLVERTRETER FÜR DIE DEDUPLIZIERTE DATEI (METAFILE) 
