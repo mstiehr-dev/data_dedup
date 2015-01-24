@@ -66,6 +66,7 @@ int main(int argc, char **argv) {
 		printf("JournalFileLen: %ld\n", journalFileLen);
 		printf("JournalEntries: %ld\n", journalEntries);
 		printf("JournalMapLen : %ld\n", journalMapLen);
+		printf("JournalMapAdd : %p", journalMapAdd);
 	#endif
 	
 	// STELLVERTRETER FÜR DIE DEDUPLIZIERTE DATEI (METAFILE) 
@@ -234,7 +235,10 @@ int main(int argc, char **argv) {
 	laufZeit = difftime(time(NULL),startZeit);
 	if(laufZeit<0.01) laufZeit=0.01;
 	double speed = inputFileLenMB/laufZeit;
-	munmap(journalMapAdd, journalMapLen);
+	if((munmap(journalMapAdd, journalMapLen))==-1) {
+		perror("munmap");
+		exit(1);
+	}
 	/* Datei wieder verkleinern */
 	if(ftruncate(fileno(journalFile),journalEntries*sizeof(journalentry))==-1) {
 		perror("ftruncate()");
