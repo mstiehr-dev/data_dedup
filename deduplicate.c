@@ -212,7 +212,7 @@ int main(int argc, char **argv) {
 					cudaCopyJournal(VRAM, journalMapAdd, journalMapLen);
 				#endif
 				}
-				//printf("%li;%32s;%i\n",record.block, md5String, record.len);
+				printf("\nFortschritt: %3.2f\n", (bytesBufferedTotal*100.0)/inputFileLen);
 			} else { // DER HASH IST BEREITS BEKANNT
 				printf("."); fflush(stdout);
 				infoForMetaFile = hashInJournalPos; // die zeile des journals, in der der hash gefunden wurde, wird ins metafile übernommen 
