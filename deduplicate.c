@@ -204,7 +204,7 @@ int main(int argc, char **argv) {
 				// die Journal-Datei muss vergrößert und erneut gemappt werden 
 					munmap(journalMapAdd, journalMapLen); // synchronisiert mit Dateisystem 
 					journalMapAdd = mapFile(fileno(journalFile),journalMapLen, auxSpace, &journalMapLen); // remap 
-					journalMapCurrentEnd = journalMapAdd + journalEntries*sizeof(journalentry);
+					journalMapCurrentEnd = ((journalentry*)journalMapAdd) + journalEntries*sizeof(journalentry);
 				// auch der VRAM muss aktualisiert werden: 
 				#ifdef USE_CUDA
 					CUDA_HANDLE_ERR( cudaFree(VRAM) );

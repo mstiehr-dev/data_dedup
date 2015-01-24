@@ -71,7 +71,7 @@
 		__constant__ char goldenHash[33];	// im Constant-Cache gehaltener Such-String
 		int blocks = 4;	// Konfiguration des Kernelaufrufs: Anzahl der Blöcke
 		int threadsPerBlock = 256;
-		long isHashinJournalGPU(char *, void *, int);
+		long isHashinJournalGPU(char *, void *, off_t);
 		void cudaCopyJournal(void *, void *, off_t);
 		void cudaExtendHashStack(void *, journalentry *);
 		#ifndef CUDA_HANDLE_ERR
