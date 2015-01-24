@@ -52,6 +52,7 @@
 	const char * buildString3s(const char *, const char *, const char *);
 	void * mapFile(int fd, off_t len, int aux, off_t *saveLen);
 	long isHashInMappedJournal(char *hash, void * add, long records);
+	long isHashinJournalGPU(char *, void *, off_t);
 	char   getRandChar();
 	char * getRandString(size_t n);
 	float  getRandFloat();
@@ -71,7 +72,7 @@
 		__constant__ char goldenHash[33];	// im Constant-Cache gehaltener Such-String
 		int blocks = 4;	// Konfiguration des Kernelaufrufs: Anzahl der Blöcke
 		int threadsPerBlock = 256;
-		long isHashinJournalGPU(char *, void *, off_t);
+		
 		void cudaCopyJournal(void *, void *, off_t);
 		void cudaExtendHashStack(void *, journalentry *);
 		#ifndef CUDA_HANDLE_ERR
