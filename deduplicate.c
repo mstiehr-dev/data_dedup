@@ -187,11 +187,13 @@ int main(int argc, char **argv) {
 				record.block = storageFileLen; // ganz hinten anfügen -> aktuelles Dateiende
 				strncpy(record.hash, md5String, 32+1); // die Prüfsumme wird übernommen
 				record.len = current_read; // die Blocklänge 
-				#ifdef DEBUG
-					printf("%ld -> %s -> %d\n", record.block, record.hash, record.len);
-				#endif
 				fwrite(inputFileBuffer+bytesRead, current_read, 1, storageFile); // Daten an Dump anfügen
-				memcpy(journalMapCurrentEnd, &record, sizeof(journalentry)); // Eintrag im Journal vornehmen 
+				void * ret = memcpy(journalMapCurrentEnd, &record, sizeof(journalentry)); // Eintrag im Journal vornehmen 
+				#ifdef DEBUG
+					printf("\n%ld -> %s -> %d\n", record.block, record.hash, record.len);
+					printf("journalMapCurrentEnd: %p\n", journalMapCurrentEnd);
+					printf("return memcpy       : %p\n", ret);
+				#endif
 			#ifdef USE_CUDA
 				// auch der Datenbestand im Videospeicher muss erweitert werden 
 				cudaExtendHashStack(((journalentry*)VRAM)+journalEntries*sizeof(journalentry),&record);

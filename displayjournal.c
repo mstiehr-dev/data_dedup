@@ -28,7 +28,7 @@ int main() {
 	while(zeile<records) {
 		journalentry tupel;
 		fread(&tupel,sizeof(journalentry),1,journalFile);
-		printf("%li;%32s;%i\n",tupel.block, tupel.hash, tupel.len);
+		printf("%ld;%32s;%d\n",tupel.block, tupel.hash, tupel.len);
 		zeile++;
 	}
 	
