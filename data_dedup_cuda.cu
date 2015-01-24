@@ -38,7 +38,7 @@ __global__ void searchKernel(void *entrySet, long *result, int entries) {
 
 
 
-long isHashInJournalGPU(char *hash, void *haystack, int stacksize) {
+long isHashInJournalGPU(char *hash, void *haystack, off_t stacksize) {
 	CUDA_HANDLE_ERR( cudaMemcpyToSymbol(goldenHash, hash, 32) ); // die gesuchte Prüfsumme wird in den Cache der GPU gebracht 
 	long result = -1L; // nur der erfolgreiche Thread schreibt hier seine ID rein 
 	searchKernel<<<blocks,threadsPerBlock>>>(haystack, &result, stacksize);
