@@ -197,7 +197,7 @@ int main(int argc, char **argv) {
 				#endif
 			#ifdef USE_CUDA
 				// auch der Datenbestand im Videospeicher muss erweitert werden 
-				cudaExtendHashStack(((journalentry*)VRAM)+journalEntries*sizeof(journalentry),&record);
+				cudaExtendHashStack(((journalentry*)VRAM)+journalEntries,&record);
 			#endif	
 				journalMapCurrentEnd = ((journalentry *)journalMapCurrentEnd) + 1; // neues Journal-Ende 
 				journalFileChanged = TRUE;
@@ -205,7 +205,7 @@ int main(int argc, char **argv) {
 				// die Journal-Datei muss vergrößert und erneut gemappt werden 
 					munmap(journalMapAdd, journalMapLen); // synchronisiert mit Dateisystem 
 					journalMapAdd = mapFile(fileno(journalFile),journalMapLen, auxSpace, &journalMapLen); // remap 
-					journalMapCurrentEnd = ((journalentry*)journalMapAdd) + journalEntries*sizeof(journalentry);
+					journalMapCurrentEnd = ((journalentry*)journalMapAdd) + journalEntries;
 				// auch der VRAM muss aktualisiert werden: 
 				#ifdef USE_CUDA
 					CUDA_HANDLE_ERR( cudaFree(VRAM) );
