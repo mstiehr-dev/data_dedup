@@ -11,9 +11,11 @@ deduplicate.c:(.text+0xa99): undefined reference to `CUDA_HANDLE_ERR'
 collect2: ld returned 1 exit status
 make: *** [cuda] Fehler 1
 */
-
-#include "data_dedup.h"
-//#include "data_dedup.cuh"
+#ifdef USE_CUDA
+	#include "data_dedup.cuh"
+#else 
+	#include "data_dedup.h"
+#endif
 
 
 int main(int argc, char **argv) {
@@ -112,7 +114,7 @@ int main(int argc, char **argv) {
 	
 	
 	
-// #### VERARBEITUNG AUF DEM HOST
+// #### VERARBEITUNG AUF GPU
 #ifdef USE_CUDA
 	// Journaldaten in VRAM geben
 	if(journalMapLen> 1027604480) { // gemessen 
@@ -123,7 +125,7 @@ int main(int argc, char **argv) {
 		exit(2);
 	}
 	void * VRAM; // Adresse des Grafikspeichers
-	cudaCopyJournal(VRAM, journalMapAdd, journalMapLen);
+	cudaCopyJournal(VRAM, journalMapAdd, journalMapLen); // auch im VRAM wird ein Puffer reserviert (siehe journalMapLen)
 #endif
 
 // BEGINN DER VERARBEITUNG
@@ -149,7 +151,7 @@ int main(int argc, char **argv) {
 		//bytesActuallyBuffered = (inputFileLen-bytesBufferedTotal >= bytesBufferSize) ? bytesBufferSize : (inputFileLen-bytesBufferedTotal); // ermitteln, wie viel gelesen wurde 
 		
 		// FÜR JEDEN CHUNK EINEN HASH BERECHNEN UND MIT DEM JOURNAL VERGLEICHEN 
-		md5String = malloc(sizeof(char)*(32+1));
+		md5String = (char *) malloc(sizeof(char)*(32+1));
 		if(md5String==NULL) {
 			perror("ERROR: could not allocate 33 bytes of memory for md5String\n");
 			fcloseall();
@@ -157,13 +159,13 @@ int main(int argc, char **argv) {
 		}
 		int current_read = 0; // wie viele Bytes aktuell vorhanden sind 
 		size_t bytesRead; // Summe der konsumierten Bytes 
-		char metaFileChanged; // Flag über Modifizierung des Metafiles 
+		char journalFileChanged; // Flag über Modifizierung des Metafiles 
 		long infoForMetaFile = -1L; // enthält die jeweilige Zeilennummer des Journals
 		MD5_CTX md5Context;   // Struktur für die Hash-Berechnung
 		unsigned char md[16];
 		// Schleife geht in Schritten von 512 Byte über den aktuellen Puffer, berechnet jeweils den Hash und prüft, ob dieser bereits existiert 
 		for(bytesRead=0; bytesRead<bytesActuallyBuffered; ) {
-			metaFileChanged = FALSE;
+			journalFileChanged = FALSE;
 			current_read = (CHUNKSIZE<=(bytesActuallyBuffered-bytesRead)) ? CHUNKSIZE : bytesActuallyBuffered-bytesRead;
 			if(MD5_Init(&md5Context)==0) { // 1 == success, 0 == fail
 				perror("MD5_Init()");
@@ -184,7 +186,7 @@ int main(int argc, char **argv) {
 			hashInJournalPos = isHashInJournalGPU(md5String, VRAM, journalEntries);
 #endif
 			if(hashInJournalPos==-1) { // DER HASH IST UNBEKANNT -> MUSS ANGEFÜGT WERDEN 
-	printf("+"); fflush(stdout);
+				printf("+"); fflush(stdout);
 				infoForMetaFile = journalEntries++; // in diesem Datensatz wird sich der neue Hash befinden
 				journalentry record; // neuen Eintrag bauen 
 				record.block = storageFileLen; // ganz hinten anfügen -> aktuelles Dateiende
@@ -197,21 +199,26 @@ int main(int argc, char **argv) {
 				cudaExtendHashStack(VRAM+journalEntries*sizeof(journalentry),&record);
 			#endif	
 				journalMapCurrentEnd += sizeof(journalentry); // neues Journal-Ende 
-				metaFileChanged = TRUE;
+				journalFileChanged = TRUE;
 				if(journalEntries*sizeof(journalentry) >= journalMapLen) {
 				// die Journal-Datei muss vergrößert und erneut gemappt werden 
 					munmap(journalMapAdd, journalMapLen); // synchronisiert mit Dateisystem 
 					journalMapAdd = mapFile(fileno(journalFile),journalMapLen, auxSpace, &journalMapLen); // remap 
 					journalMapCurrentEnd = journalMapAdd + journalEntries*sizeof(journalentry);
+				// auch der VRAM muss aktualisiert werden: 
+				#ifdef USE_CUDA
+					CUDA_HANDLE_ERR( cudaFree(VRAM) );
+					cudaCopyJournal(VRAM, journalMapAdd, journalMapLen);
+				#endif
 				}
 				//printf("%li;%32s;%i\n",record.block, md5String, record.len);
 			} else { // DER HASH IST BEREITS BEKANNT
-	printf("."); fflush(stdout);
+				printf("."); fflush(stdout);
 				infoForMetaFile = hashInJournalPos; // die zeile des journals, in der der hash gefunden wurde, wird ins metafile übernommen 
 			}
 			// Informationen ins Metafile schreiben
 			fprintf(metaFile, "%ld\n", infoForMetaFile);
-			if(metaFileChanged) {
+			if(journalFileChanged) {
 				newBytes += current_read;
 				storageFileLen += current_read;
 			}
@@ -221,15 +228,15 @@ int main(int argc, char **argv) {
 		if(md5String) 		free(md5String);
 	}
 	// Nachbereitung
+	laufZeit = difftime(time(NULL),startZeit);
+	if(laufZeit<0.01) laufZeit=0.01;
+	double speed = inputFileLenMB/laufZeit;
 	munmap(journalMapAdd, journalMapLen);
 	/* Datei wieder verkleinern */
 	if(ftruncate(fileno(journalFile),journalEntries*sizeof(journalentry))==-1) {
 		perror("ftruncate()");
 		exit(1);
 	}
-	laufZeit = difftime(time(NULL),startZeit);
-	if(laufZeit<0.01) laufZeit=0.01;
-	double speed = inputFileLenMB/laufZeit;
 	if(metaFileName) free(metaFileName);
 	fcloseall();
 #ifdef USE_CUDA 

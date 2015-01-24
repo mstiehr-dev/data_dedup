@@ -1,6 +1,5 @@
 /* data_dedup_cuda.cu */
 
-#include "data_dedup.h"
 #include "data_dedup.cuh"
 
 
@@ -30,6 +29,10 @@ __global__ void searchKernel(void *entrySet, long *result, int entries) {
 		}
 		idx += blockDim.x * gridDim.x; // aktueller index + (anzahl der Blöcke * Threads pro Block) 
 	}
+	/* ein thread soll noch etwas anderes machen */ 
+	if(idx == (entries-1)) {
+		// vielleicht Hash hinzufügen? 
+	}
 	return;
 } 
 
@@ -37,7 +40,7 @@ __global__ void searchKernel(void *entrySet, long *result, int entries) {
 
 long isHashInJournalGPU(char *hash, void *haystack, int stacksize) {
 	CUDA_HANDLE_ERR( cudaMemcpyToSymbol(goldenHash, hash, 32) ); // die gesuchte Prüfsumme wird in den Cache der GPU gebracht 
-	long result = -1L;
+	long result = -1L; // nur der erfolgreiche Thread schreibt hier seine ID rein 
 	searchKernel<<<blocks,threadsPerBlock>>>(haystack, &result, stacksize);
 	return result;
 }

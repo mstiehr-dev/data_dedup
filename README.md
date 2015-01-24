@@ -1,15 +1,15 @@
+#*currently broken - new deadline 29/1/15*
 
+##description
++ files are cut in blocks of 512 byte
++ unique blocks are stored in a huge dump file and organized in a central index journal 
++ deduplicated file is represented by a text file containing indices of the original blocks 
 
 ##dependencies
 + **GNU/Linux**
-+ gcc
-+ libssl-dev
-<<<<<<< HEAD
-+ [CUDA Toolkit]
-
-=======
++ [gcc]
++ [libssl-dev]
 + [cuda-sdk]
->>>>>>> 32319a04290e8fbbde0a7466d0f2aaa4e3032fd6
 
 ##usage
 - deduplicate \<filename\>
@@ -18,8 +18,6 @@
 
 
 [BSD 3 License]: https://tldrlegal.com/license/bsd-3-clause-license-%28revised%29#fulltext
-<<<<<<< HEAD
-[CUDA Toolkit]: https://developer.nvidia.com/cuda-downloads#linux
-=======
 [cuda-sdk]: http://docs.nvidia.com/cuda/cuda-getting-started-guide-for-linux/
->>>>>>> 32319a04290e8fbbde0a7466d0f2aaa4e3032fd6
+[gcc]: https://gcc.gnu.org
+[libssl-dev]: https://packages.debian.org/de/wheezy/libssl-dev

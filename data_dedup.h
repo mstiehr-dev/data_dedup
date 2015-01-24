@@ -1,11 +1,11 @@
 /* data_dedup.h */
-#ifndef PSEM
+#ifndef __PSEM__
 
 /* Makros: 
  * USE_CUDA
  */
 
-	#define PSEM
+	#define __PSEM__
 	#ifndef _GNU_SOURCE
 		#define _GNU_SOURCE
 	#endif
@@ -54,15 +54,30 @@
 	char   getRandChar();
 	char * getRandString(size_t n);
 	float  getRandFloat();
-#ifdef USE_CUDA
-	long isHashinJournalGPU(char *, void *, int);
-	void cudaCopyJournal(void *, void *, off_t);
-	void cudaExtendHashStack(void *, journalentry *);
-#ifndef CUDA_HANDLE_ERR
-	#define CUDA_HANDLE_ERR(err) (cudaCheckError(err, __FILE__, __LINE__))
-#endif
-#endif
+
+	#ifdef USE_CUDA
+		static void cudaCheckError(cudaError_t error, const char *file, int line) {
+			if(error!=cudaSuccess) {
+				printf("%s in %s at line %d\n", cudaGetErrorString(error), file, line);
+				exit(EXIT_FAILURE);
+			}
+		}
+		#define CUDA_HANDLE_ERR(err) (cudaCheckError(err,__FILE__, __LINE__))
+		cudaDeviceProp prop; // zur Ermittlung der GPU Eckdaten 
+		size_t totalGlobalMem; 
+		size_t sharedMemPerBlock;
+		int max_threadsPerBlock;
+		__constant__ char goldenHash[33];	// im Constant-Cache gehaltener Such-String
+		int blocks = 4;	// Konfiguration des Kernelaufrufs: Anzahl der Blöcke
+		int threadsPerBlock = 256;
+		long isHashinJournalGPU(char *, void *, int);
+		void cudaCopyJournal(void *, void *, off_t);
+		void cudaExtendHashStack(void *, journalentry *);
+		#ifndef CUDA_HANDLE_ERR
+			#define CUDA_HANDLE_ERR(err) (cudaCheckError(err, __FILE__, __LINE__))
+		#endif
+	#endif
 
 
-#endif
+#endif // __PSEM__
 
