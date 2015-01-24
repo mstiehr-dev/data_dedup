@@ -6,7 +6,7 @@
 	#include "data_dedup.h"
 #endif
 
-#define DEBUG
+//#define DEBUG
 
 int main(int argc, char **argv) {
 	char *inputFileName = NULL;
