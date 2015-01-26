@@ -139,7 +139,7 @@ int main(int argc, char **argv) {
 	printf("deduplicating \"%s\" [%.3f MB]\n",inputFileName, inputFileLenMB);
 	char *md5String = (char *) NULL;
 	// Die Schleife verarbeitet die Eingabedatei in Schritten von <bytesBufferSize> Byte, bis die gesamte Datei gelesen wurde 
-	const unsigned int bytesBufferSize = 128*1024*1024; // 128 MB
+	const unsigned int bytesBufferSize = 8*1024*1024; // 128 MB
 	for(bytesBufferedTotal = 0L; bytesBufferedTotal<inputFileLen; bytesBufferedTotal+=bytesActuallyBuffered) {
 		inputFileBuffer = (char *) malloc(sizeof(char)*bytesBufferSize);
 		if(inputFileBuffer==NULL) {
@@ -217,6 +217,15 @@ int main(int argc, char **argv) {
 					CUDA_HANDLE_ERR( cudaFree(VRAM) );
 					cudaCopyJournal(VRAM, journalMapAdd, journalMapLen);
 				#endif
+				laufZeit = difftime(time(NULL),start);
+				if(laufZeit<0.1) laufZeit = 0.1;
+				printf("\n+++++++++++++++++++++++++++++++++++++++++++\n");
+				off_t progress = bytesBufferedTotal+bytesRead + current_read;
+				printf("Fortschritt: %3.2f%%\n", (progress*100.0)/inputFileLen);
+				double speed = (progress/1024)/laufZeit; // in KB/s
+				printf("aktuelle Geschwindigkeit: %.3f KB/s\n", speed);
+				printf("verbleibend: %ld MB [~%.1f s]\n", (inputFileLen-progress)/(1024*1024.0), (inputFileLen-progress)/speed);
+				printf("+++++++++++++++++++++++++++++++++++++++++++\n");
 				}
 			} else { // DER HASH IST BEREITS BEKANNT
 				printf("."); //fflush(stdout);
@@ -232,15 +241,6 @@ int main(int argc, char **argv) {
 				newBytes += current_read;
 				storageFileLen += current_read;
 			}
-			laufZeit = difftime(time(NULL),start);
-			if(laufZeit<0.1) laufZeit = 0.1;
-			printf("\n+++++++++++++++++++++++++++++++++++++++++++\n");
-			off_t progress = bytesBufferedTotal+bytesRead + current_read;
-			printf("Fortschritt: %3.2f%%\n", (progress*100.0)/inputFileLen);
-			double speed = (progress/1024)/laufZeit; // in KB/s
-			printf("aktuelle Geschwindigkeit: %.3f KB/s\n", speed);
-			printf("verbleibend: %ld MB [~%.1f s]\n", (inputFileLen-progress)/(1024*1024.0), (inputFileLen-progress)/speed);
-			printf("+++++++++++++++++++++++++++++++++++++++++++\n");
 			bytesRead += current_read;
 		}
 		if(inputFileBuffer) free(inputFileBuffer);
