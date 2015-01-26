@@ -2,6 +2,9 @@
 
 #ifdef USE_CUDA
 	#include "data_dedup.cuh"
+	__constant__ char goldenHash[33];	// im Constant-Cache gehaltener Such-String
+	int blocks = 4;	// Konfiguration des Kernelaufrufs: Anzahl der Blöcke || beste Performance: 2* MultiProcessorCount
+	int threadsPerBlock = 1024; // maximum
 #else
 	#include "data_dedup.h"
 #endif // USE_CUDA
