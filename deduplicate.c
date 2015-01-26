@@ -140,9 +140,10 @@ int main(int argc, char **argv) {
 	char *md5String = (char *) NULL;
 	// Die Schleife verarbeitet die Eingabedatei in Schritten von <bytesBufferSize> Byte, bis die gesamte Datei gelesen wurde 
 	const unsigned int bytesBufferSize = 8*1024*1024; // 128 MB
+	off_t progress = 0, delta = 0;
+	time_t start = time(NULL);
 	for(bytesBufferedTotal = 0L; bytesBufferedTotal<inputFileLen; bytesBufferedTotal+=bytesActuallyBuffered) {
-		time_t start = time(NULL);
-		off_t progress = 0, delta = 0;
+		
 		inputFileBuffer = (char *) malloc(sizeof(char)*bytesBufferSize);
 		if(inputFileBuffer==NULL) {
 			printf("ERROR: could not allocate %i bytes of memory",bytesBufferSize);
@@ -230,6 +231,7 @@ int main(int argc, char **argv) {
 					printf("delta: %.2f MByte, zeit: %.1fs\n", delta/(1024.0*1024.0), laufZeit);
 					printf("verbleibend: %.1f MB [~%.1f s]\n", (inputFileLen-progress)/(1024.0*1024.0), (inputFileLen-progress)/(speed*1024.0*1024.0));
 					printf("+++++++++++++++++++++++++++++++++++++++++++\n");
+					start = time(NULL);
 				}
 			} else { // DER HASH IST BEREITS BEKANNT
 				//printf("."); //fflush(stdout);
