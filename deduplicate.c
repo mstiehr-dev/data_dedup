@@ -202,9 +202,9 @@ int main(int argc, char **argv) {
 			hashInJournalPos = isHashInMappedJournal(md5String, journalMapAdd, journalEntries);
 #else 
 			//hashInJournalPos = isHashInJournalGPU(md5String, VRAM, journalEntries);
-			CUDA_HANDLE_ERR( cudaMemcpyToSymbol(goldenHash, hash, 32) ); // die gesuchte Prüfsumme wird in den Cache der GPU gebracht 
+			CUDA_HANDLE_ERR( cudaMemcpyToSymbol(goldenHash, md5String, 32) ); // die gesuchte Prüfsumme wird in den Cache der GPU gebracht 
 			long result = -1L; // nur der erfolgreiche Thread schreibt hier seine ID rein 
-			searchKernel<<<blocks,threadsPerBlock>>>(haystack, &result, stacksize);
+			searchKernel<<<1,1>>>(journalMapAdd, &result, journalEntries);
 			hashInJournalPos =  *result;
 #endif
 			if(hashInJournalPos==-1) { // DER HASH IST UNBEKANNT -> MUSS ANGEFÜGT WERDEN 
