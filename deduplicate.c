@@ -243,7 +243,7 @@ int main(int argc, char **argv) {
 			CUDA_HANDLE_ERR( cudaMemcpyToSymbol(goldenHash, md5String, 32) ); // die gesuchte Prüfsumme wird in den Cache der GPU gebracht 
 			long result = -1L; // nur der erfolgreiche Thread schreibt hier seine ID rein 
 			searchKernel<<<1,1>>>(journalMapAdd, &result, journalEntries);
-			hashInJournalPos =  *result;
+			hashInJournalPos = result;
 #endif
 			if(hashInJournalPos==-1) { // DER HASH IST UNBEKANNT -> MUSS ANGEFÜGT WERDEN 
 				//printf("+"); //fflush(stdout);
