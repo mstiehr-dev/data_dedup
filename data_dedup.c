@@ -153,6 +153,6 @@ float getRandFloat() { // liefert eine Zufallszahl zwischen 0 und 1 (inklusive)
 	}
 
 	__host__ void cudaExtendHashStack(void *add, journalentry *entry) {
-		CUDA_HANDLE_ERR( cudaMemcpy(add, entry, sizeof(journalentry), cudaMemcpyHostToDevice) );
+		CUDA_HANDLE_ERR( cudaMemcpy(add, (void*)entry, sizeof(journalentry), cudaMemcpyHostToDevice) );
 	}
 #endif // USE_CUDA
