@@ -227,8 +227,8 @@ int main(int argc, char **argv) {
 				printf("Fortschritt: %3.2f%%\n", (progress*100.0)/inputFileLen);
 				double speed = (delta/1024.0)/laufZeit; // in KB/s
 				printf("aktuelle Geschwindigkeit: %.3f KB/s\n", speed);
-				printf("delta: %ld KByte\n", delta/1024.0);
-				printf("verbleibend: %f KB [~%.1f s]\n", (inputFileLen-progress)/1024.0, (inputFileLen-progress)/(speed*1024.0));
+				printf("delta: %.2f KByte\n", delta/1024.0);
+				printf("verbleibend: %.2f KB [~%.1f s]\n", (inputFileLen-progress)/1024.0, (inputFileLen-progress)/(speed*1024.0));
 				printf("+++++++++++++++++++++++++++++++++++++++++++\n");
 				}
 			} else { // DER HASH IST BEREITS BEKANNT
