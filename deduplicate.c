@@ -139,9 +139,6 @@ int main(int argc, char **argv) {
 	}
 	void * VRAM = NULL; // Adresse des Grafikspeichers
 	cudaCopyJournal(VRAM, journalMapAdd, journalMapLen); // auch im VRAM wird ein zusätzlicher Puffer reserviert (siehe journalMapLen)
-	// Kernel Setup
-	blocks = 4; 
-	threadsPerBlock = 1024;
 #endif
 
 // BEGINN DER VERARBEITUNG
