@@ -219,16 +219,16 @@ int main(int argc, char **argv) {
 					cudaCopyJournal(VRAM, journalMapAdd, journalMapLen);
 				#endif
 					laufZeit = difftime(time(NULL),start);
-					if(laufZeit<1.0) laufZeit = 1.0;
+					if(laufZeit<0.1) laufZeit = 0.1;
 					printf("\n+++++++++++++++++++++++++++++++++++++++++++\n");
 					delta = progress;
 					progress = bytesBufferedTotal+bytesRead + current_read;
 					delta = progress - delta;
 					printf("Fortschritt: %3.2f%%\n", (progress*100.0)/inputFileLen);
-					double speed = (delta/1024.0)/laufZeit; // in KB/s
-					printf("aktuelle Geschwindigkeit: %.3f KB/s\n", speed);
-					printf("delta: %.2f KByte, zeit: %.1fs\n", delta/1024.0, laufZeit);
-					printf("verbleibend: %.2f KB [~%.1f s]\n", (inputFileLen-progress)/1024.0, (inputFileLen-progress)/(speed*1024.0));
+					double speed = (delta/(1024.0*1024.0))/laufZeit; // in MB/s
+					printf("aktuelle Geschwindigkeit: %.3f MB/s\n", speed);
+					printf("delta: %.2f MByte, zeit: %.1fs\n", delta/(1024.0*1024.0), laufZeit);
+					printf("verbleibend: %.1f KB [~%.1f s]\n", (inputFileLen-progress)/1024.0, (inputFileLen-progress)/(speed*1024.0));
 					printf("+++++++++++++++++++++++++++++++++++++++++++\n");
 				}
 			} else { // DER HASH IST BEREITS BEKANNT
