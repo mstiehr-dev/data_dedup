@@ -227,6 +227,7 @@ int main(int argc, char **argv) {
 				printf("Fortschritt: %3.2f%%\n", (progress*100.0)/inputFileLen);
 				double speed = (delta/1024.0)/laufZeit; // in KB/s
 				printf("aktuelle Geschwindigkeit: %.3f KB/s\n", speed);
+				printf("delta: %ld Byte\n", delta);
 				printf("verbleibend: %ld B [~%.1f s]\n", (inputFileLen-progress), (inputFileLen-progress)/speed);
 				printf("+++++++++++++++++++++++++++++++++++++++++++\n");
 				}
