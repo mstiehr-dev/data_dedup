@@ -11,6 +11,18 @@
 /* man könnte auch noch das Metafile binär gestalten und mmapen, alle x-tausend einträge vergrößern etc 
  * das würde den ständigen schreibaufwand verringern */
 
+
+cudaDeviceProp prop; // zur Ermittlung der GPU Eckdaten 
+size_t totalGlobalMem; 
+size_t sharedMemPerBlock;
+int max_threadsPerBlock;
+
+void cudaCopyJournal(void *, void *, off_t);
+void cudaExtendHashStack(void *, journalentry *);
+
+time_t startZeit;
+double laufZeit;
+
 int main(int argc, char **argv) {
 	char *inputFileName = NULL;
 	int c = 0;
@@ -127,6 +139,9 @@ int main(int argc, char **argv) {
 	}
 	void * VRAM = NULL; // Adresse des Grafikspeichers
 	cudaCopyJournal(VRAM, journalMapAdd, journalMapLen); // auch im VRAM wird ein zusätzlicher Puffer reserviert (siehe journalMapLen)
+	// Kernel Setup
+	blocks = 4; 
+	threadsPerBlock = 1024;
 #endif
 
 // BEGINN DER VERARBEITUNG
