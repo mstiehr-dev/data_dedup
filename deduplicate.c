@@ -167,6 +167,7 @@ int main(int argc, char **argv) {
 		// Schleife geht in Schritten von 512 Byte über den aktuellen Puffer, berechnet jeweils den Hash und prüft, ob dieser bereits existiert 
 		for(bytesRead=0; bytesRead<bytesActuallyBuffered; ) {
 			time_t start = time(NULL);
+			off_t progress = 0, delta = 0;
 			journalFileChanged = FALSE;
 			current_read = (CHUNKSIZE<=(bytesActuallyBuffered-bytesRead)) ? CHUNKSIZE : bytesActuallyBuffered-bytesRead;
 			if(MD5_Init(&md5Context)==0) { // 1 == success, 0 == fail
@@ -220,11 +221,13 @@ int main(int argc, char **argv) {
 				laufZeit = difftime(time(NULL),start);
 				if(laufZeit<0.1) laufZeit = 0.1;
 				printf("\n+++++++++++++++++++++++++++++++++++++++++++\n");
-				off_t progress = bytesBufferedTotal+bytesRead + current_read;
-				printf("Fortschritt: %3.2f%%\n", (progress*100.0)/inputFileLen);
-				double speed = (progress/1024)/laufZeit; // in KB/s
+				delta = progress;
+				progress = bytesBufferedTotal+bytesRead + current_read;
+				delta = progress - delta;
+				printf("Fortschritt: %3.2f%%\n", (delta*100.0)/inputFileLen);
+				double speed = (delta/1024)/laufZeit; // in KB/s
 				printf("aktuelle Geschwindigkeit: %.3f KB/s\n", speed);
-				printf("verbleibend: %ld MB [~%.1f s]\n", (inputFileLen-progress)/(1024*1024.0), (inputFileLen-progress)/speed);
+				printf("verbleibend: %ld B [~%.1f s]\n", (inputFileLen-progress), (inputFileLen-progress)/speed);
 				printf("+++++++++++++++++++++++++++++++++++++++++++\n");
 				}
 			} else { // DER HASH IST BEREITS BEKANNT
