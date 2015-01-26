@@ -139,6 +139,7 @@ int main(int argc, char **argv) {
 	printf("deduplicating \"%s\" [%.3f MB]\n",inputFileName, inputFileLenMB);
 	char *md5String = (char *) NULL;
 	// Die Schleife verarbeitet die Eingabedatei in Schritten von <bytesBufferSize> Byte, bis die gesamte Datei gelesen wurde 
+	const unsigned int bytesBufferSize = 128*1024*1024; // 128 MB
 	for(bytesBufferedTotal = 0L; bytesBufferedTotal<inputFileLen; bytesBufferedTotal+=bytesActuallyBuffered) {
 		inputFileBuffer = (char *) malloc(sizeof(char)*bytesBufferSize);
 		if(inputFileBuffer==NULL) {

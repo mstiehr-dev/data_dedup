@@ -44,7 +44,7 @@
 	time_t startZeit;
 	double laufZeit;
 
-	extern unsigned int bytesBufferSize = 128*1024*1024; // 128 MB
+	
 
 	#define spareEntries 10000
 	#define auxSpace spareEntries*sizeof(journalentry) // wird verwendet bei MapFile(), gibt an wieviel zusätzlicher Platz reserviert wird 
