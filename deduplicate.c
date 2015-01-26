@@ -267,6 +267,7 @@ int main(int argc, char **argv) {
 	const unsigned int bytesBufferSize = 8*1024*1024; // 128 MB
 	off_t progress = 0, delta = 0;
 	time_t start = time(NULL);
+	long *hashInJournalPos = (long *) malloc(sizeof(long)); 
 	for(bytesBufferedTotal = 0L; bytesBufferedTotal<inputFileLen; bytesBufferedTotal+=bytesActuallyBuffered) {
 		inputFileBuffer = (char *) malloc(sizeof(char)*bytesBufferSize);
 		if(inputFileBuffer==NULL) {
@@ -306,13 +307,13 @@ int main(int argc, char **argv) {
 				sprintf(md5String+2*i, "%02x", (unsigned int) md[i]);
 
 // #### HASH SUCHE 
-			long hashInJournalPos = -1L;
+			*hashInJournalPos = -1L; // Init 
 #ifndef USE_CUDA
-			hashInJournalPos = isHashInMappedJournal(md5String, journalMapAdd, journalEntries);
+			*hashInJournalPos = isHashInMappedJournal(md5String, journalMapAdd, journalEntries);
 #else
 			CUDA_HANDLE_ERR( cudaMemcpyToSymbol(goldenHash, md5String, 32) ); // den Suchhash in den constant cache bringen 
 			searchKernel<<<blocks,threadsPerBlock>>>(VRAM, (long*)VResult, journalEntries);
-			CUDA_HANDLE_ERR( cudaMemcpy((void*)&hashInJournalPos, VResult, sizeof(long), cudaMemcpyDeviceToHost) );
+			CUDA_HANDLE_ERR( cudaMemcpy((void*)hashInJournalPos, VResult, sizeof(long), cudaMemcpyDeviceToHost) );
 			printf("kernel result: %10ld\n", hashInJournalPos);
 #endif // USE_CUDA
 			if(hashInJournalPos==-1) { // DER HASH IST UNBEKANNT -> MUSS ANGEFÜGT WERDEN 
