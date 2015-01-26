@@ -316,7 +316,7 @@ int main(int argc, char **argv) {
 			CUDA_HANDLE_ERR( cudaMemcpy((void*)hashInJournalPos, VResult, sizeof(long), cudaMemcpyDeviceToHost) );
 			printf("kernel result: %10ld\n", hashInJournalPos);
 #endif // USE_CUDA
-			if(hashInJournalPos==-1) { // DER HASH IST UNBEKANNT -> MUSS ANGEFÜGT WERDEN 
+			if(*hashInJournalPos==-1) { // DER HASH IST UNBEKANNT -> MUSS ANGEFÜGT WERDEN 
 				//printf("+"); //fflush(stdout);
 				infoForMetaFile = journalEntries++; // in diesem Datensatz wird sich der neue Hash befinden
 				journalentry record; // neuen Eintrag bauen 
@@ -363,7 +363,7 @@ int main(int argc, char **argv) {
 				}
 			} else { // DER HASH IST BEREITS BEKANNT
 				//printf("."); //fflush(stdout);
-				infoForMetaFile = hashInJournalPos; // die zeile des journals, in der der hash gefunden wurde, wird ins metafile übernommen 
+				infoForMetaFile = *hashInJournalPos; // die zeile des journals, in der der hash gefunden wurde, wird ins metafile übernommen 
 			}
 			// Informationen ins Metafile schreiben
 			#ifdef DEBUG 
@@ -394,6 +394,7 @@ int main(int argc, char **argv) {
 		exit(1);
 	}
 	if(metaFileName) free(metaFileName);
+	if(hashInJournalPos) free(hashInJournalPos);
 	fcloseall();
 #ifdef USE_CUDA 
 	CUDA_HANDLE_ERR( cudaFree(VRAM) ); 
