@@ -43,7 +43,7 @@ int memcmp4l(char *s, char *t) { // gibt 1 zurück bei Unterscheidung
 	long *l1 = (long*)s;
 	long *l2 = (long*)t;
 	while(i--) {
-		if(*l1!=l2)
+		if(*l1!=*l2)
 			return 1;
 		l1++;
 		l2++;
