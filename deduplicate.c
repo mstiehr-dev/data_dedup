@@ -141,6 +141,8 @@ int main(int argc, char **argv) {
 	// Die Schleife verarbeitet die Eingabedatei in Schritten von <bytesBufferSize> Byte, bis die gesamte Datei gelesen wurde 
 	const unsigned int bytesBufferSize = 8*1024*1024; // 128 MB
 	for(bytesBufferedTotal = 0L; bytesBufferedTotal<inputFileLen; bytesBufferedTotal+=bytesActuallyBuffered) {
+		time_t start = time(NULL);
+		off_t progress = 0, delta = 0;
 		inputFileBuffer = (char *) malloc(sizeof(char)*bytesBufferSize);
 		if(inputFileBuffer==NULL) {
 			printf("ERROR: could not allocate %i bytes of memory",bytesBufferSize);
@@ -166,8 +168,6 @@ int main(int argc, char **argv) {
 		unsigned char md[16];
 		// Schleife geht in Schritten von 512 Byte über den aktuellen Puffer, berechnet jeweils den Hash und prüft, ob dieser bereits existiert 
 		for(bytesRead=0; bytesRead<bytesActuallyBuffered; ) {
-			time_t start = time(NULL);
-			off_t progress = 0, delta = 0;
 			journalFileChanged = FALSE;
 			current_read = (CHUNKSIZE<=(bytesActuallyBuffered-bytesRead)) ? CHUNKSIZE : bytesActuallyBuffered-bytesRead;
 			if(MD5_Init(&md5Context)==0) { // 1 == success, 0 == fail
