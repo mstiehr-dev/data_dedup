@@ -67,19 +67,21 @@
 			}
 		}
 		#define CUDA_HANDLE_ERR(err) (cudaCheckError(err,__FILE__, __LINE__))
+		
 		#ifndef CUDA_VARS
 			#define CUDA_VARS
-			cudaDeviceProp prop; // zur Ermittlung der GPU Eckdaten 
-			size_t totalGlobalMem; 
-			size_t sharedMemPerBlock;
-			int max_threadsPerBlock;
-			__constant__ char goldenHash[33];	// im Constant-Cache gehaltener Such-String
+			extern cudaDeviceProp prop; // zur Ermittlung der GPU Eckdaten 
+			extern size_t totalGlobalMem; 
+			extern size_t sharedMemPerBlock;
+			extern int max_threadsPerBlock;
+			extern __constant__ char goldenHash[33];	// im Constant-Cache gehaltener Such-String
 			int blocks = 4;	// Konfiguration des Kernelaufrufs: Anzahl der Blöcke || beste Performance: 2* MultiProcessorCount
 			int threadsPerBlock = 1024; // maximum
 			
 			void cudaCopyJournal(void *, void *, off_t);
 			void cudaExtendHashStack(void *, journalentry *);
 		#endif // CUDA_VARS
+
 		#ifndef CUDA_HANDLE_ERR
 			#define CUDA_HANDLE_ERR(err) (cudaCheckError(err, __FILE__, __LINE__))
 		#endif // CUDA_HANDLE_ERR
