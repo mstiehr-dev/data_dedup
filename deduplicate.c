@@ -23,7 +23,7 @@
 	int blocks = 4;	// Konfiguration des Kernelaufrufs: Anzahl der Blöcke || beste Performance: 2* MultiProcessorCount
 	int threadsPerBlock = 1024; // maximum
 	
-	__global__ void searchKernel(void *entrySet, void *result, int entries) {
+	__global__ void searchKernel(void *entrySet, long *result, int entries) {
 		// implementiert memcmp auf Basis von <long> Vergleichen 
 		long idx = threadIdx.x + blockIdx.x * blockDim.x;
 		const long *c1,*c2;
@@ -44,7 +44,7 @@
 				c2++;
 			}
 			if(!diff) { // treffer
-				*result = (void*)idx; // Thread-Index ist die Nummer des Eintrags
+				*result = idx; // Thread-Index ist die Nummer des Eintrags
 				idx = entries; // dieser thread braucht nicht weitersuchen
 			}
 			idx += blockDim.x * gridDim.x; // aktueller index + (anzahl der Blöcke * Threads pro Block) 
@@ -311,7 +311,7 @@ int main(int argc, char **argv) {
 			hashInJournalPos = isHashInMappedJournal(md5String, journalMapAdd, journalEntries);
 #else
 			CUDA_HANDLE_ERR( cudaMemcpyToSymbol(goldenHash, md5String, 32) ); // den Suchhash in den constant cache bringen 
-			searchKernel<<<blocks,threadsPerBlock>>>(VRAM, VResult, journalEntries);
+			searchKernel<<<blocks,threadsPerBlock>>>(VRAM, (long*)VResult, journalEntries);
 			CUDA_HANDLE_ERR( cudaMemcpy((void*)&hashInJournalPos, VResult, sizeof(long), cudaMemcpyDeviceToHost) );
 			printf("kernel result: %10ld\n", hashInJournalPos);
 #endif // USE_CUDA
