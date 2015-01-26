@@ -1,11 +1,11 @@
 CC=gcc
 LDFLAGS=-lssl -lcrypto
 
-cuda: deduplicate.c data_dedup_cuda.o data_dedup_USECUDA.o
+cuda: deduplicate.c data_dedup_cuda.o
 	sh prepare.sh 
 	cp deduplicate.c deduplicate.cu
 	cp data_dedup.h data_dedup.cuh
-	nvcc -lssl -lcrypto -DUSE_CUDA deduplicate.cu data_dedup_USECUDA.o data_dedup_cuda.o -o deduplicateGPU  
+	nvcc -lssl -lcrypto -DUSE_CUDA deduplicate.cu data_dedup_cuda.o -o deduplicateGPU  
 
 host: deduplicate.c data_dedup.o
 	sh prepare.sh
@@ -24,12 +24,10 @@ displaymetafile:
 data_dedup.o: data_dedup.c data_dedup.h
 	$(CC) $(LDFLAGS) -c data_dedup.c
 
-data_dedup_USECUDA.o: data_dedup.c
-	cp data_dedup.c data_dedup.cu
-	nvcc -lssl -lcrypto -c -DUSE_CUDA data_dedup.cu -o data_dedup_USECUDA.o
 
-data_dedup_cuda.o: data_dedup_cuda.cu
-	nvcc -lssl -lcrypto -c -DUSE_CUDA data_dedup_cuda.cu -o data_dedup_cuda.o
+data_dedup_cuda.o: data_dedup.c
+	cp data_dedup.c data_dedup.cu
+	nvcc -lssl -lcrypto -c -DUSE_CUDA data_dedup.cu -o data_dedup_cuda.o
 clean:
 	rm -f *.o
 	rm -f *~
