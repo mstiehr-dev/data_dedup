@@ -20,12 +20,13 @@ reassemble:
 
 displaymetafile: 
 	$(CC) $(LDFLAGS) displaymetafile.c -o displaymetafile
-	
+
 data_dedup.o: data_dedup.c data_dedup.h
 	$(CC) $(LDFLAGS) -c data_dedup.c
 
 data_dedup_USECUDA.o: data_dedup.c
-	$(CC) $(LDFLAGS) -c data_dedup.c -DUSE_CUDA -o data_dedup_USECUDA.o
+	cp data_dedup.c data_dedup.cu
+	nvcc -lssl -lcrypto -c -DUSE_CUDA data_dedup.cu -o data_dedup_USECUDA.o
 
 clean:
 	rm -f *.o
