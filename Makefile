@@ -1,14 +1,14 @@
 CC=gcc
 LDFLAGS=-lssl -lcrypto
 
-cuda: deduplicate.c data_dedup.o
+cuda: deduplicate.c
 	sh prepare.sh 
 	cp deduplicate.c deduplicate.cu
-	nvcc -lssl -lcrypto -DUSE_CUDA deduplicate.cu data_dedup.o -o deduplicateGPU  
+	nvcc -lssl -lcrypto -DUSE_CUDA deduplicate.cu -o deduplicateGPU  
 
-host: deduplicate.c data_dedup.o
+host: deduplicate.c
 	sh prepare.sh
-	$(CC) $(LDFLAGS) deduplicate.c data_dedup.o -o deduplicateHost
+	$(CC) $(LDFLAGS) deduplicate.c -o deduplicateHost
 
 
 displayjournal: 
@@ -19,9 +19,6 @@ reassemble:
 
 displaymetafile: 
 	$(CC) $(LDFLAGS) displaymetafile.c -o displaymetafile
-
-data_dedup.o: data_dedup.c data_dedup.h
-	$(CC) $(LDFLAGS) -c data_dedup.c
 
 clean:
 	rm -f *.o

@@ -2,6 +2,17 @@
 
 #include "data_dedup.h"
 
+const char * buildString3s(const char *s1, const char *s2, const char *s3) {
+	size_t l1 = strlen(s1);
+	size_t l2 = strlen(s2);
+	size_t l3 = strlen(s3);
+	char *newStr = (char *) malloc(sizeof(char)*(l1+l2+l3+1));
+	strncpy(newStr, s1, l1);
+	strncpy(newStr+l1,s2,l2);
+	strncpy(newStr+l1+l2,s3,l3);
+	return newStr;
+}
+
 
 int main(int argc, char **argv) {
 	if(argc!=2) {
