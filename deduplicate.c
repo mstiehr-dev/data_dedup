@@ -219,10 +219,11 @@ int main(int argc, char **argv) {
 				#endif
 					laufZeit = difftime(time(NULL),start);
 					printf("\n+++++++++++++++++++++++++++++++++++++++++++\n");
-					printf("Fortschritt: %3.2f\n", (bytesBufferedTotal*100.0)/inputFileLen);
-					double speed = bytesBufferedTotal/(1024.0*laufZeit); // in KB/s
+					long progress = bytesBufferedTotal+bytesActuallyBuffered;
+					printf("Fortschritt: %3.2f\n", (progress*100.0)/inputFileLen);
+					double speed = progress/(1024.0*laufZeit); // in KB/s
 					printf("aktuelle Geschwindigkeit: %.3f KB/s\n", speed);
-					printf("verbleibend: %ld MB [~%.1f s]\n", (inputFileLen-bytesBufferedTotal)/(1024*1024.0), (inputFileLen-bytesBufferedTotal)/speed);
+					printf("verbleibend: %ld MB [~%.1f s]\n", (inputFileLen-progress)/(1024*1024.0), (inputFileLen-bytesBufferedTotal)/speed);
 					printf("+++++++++++++++++++++++++++++++++++++++++++\n");
 				}
 			} else { // DER HASH IST BEREITS BEKANNT
