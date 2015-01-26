@@ -82,7 +82,7 @@ int main(int argc, char **argv) {
 	if(laufZeit<0.5f) laufZeit=0.5f;
 	double speed = (readBytes/(1024*1024.0)) / laufZeit;
 	printf("\nsuccessfully reassembled \"%s\" [%.1f MB/s]\n\n",restoreFileName, speed);
-	printf("please check for integrity by entering: \"diff %s <original file>\".\n", restoreFileName)
+	printf("please check for integrity by entering: \"diff %s <original file>\".\n", restoreFileName);
 	fcloseall();
 	if(restoreFileName) free(restoreFileName);
 	return 0;
