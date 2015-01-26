@@ -44,7 +44,7 @@
 				c2++;
 			}
 			if(!diff) { // treffer
-				*result = idx; // Thread-Index ist die Nummer des Eintrags
+				*result = (void*)idx; // Thread-Index ist die Nummer des Eintrags
 				idx = entries; // dieser thread braucht nicht weitersuchen
 			}
 			idx += blockDim.x * gridDim.x; // aktueller index + (anzahl der Blöcke * Threads pro Block) 
