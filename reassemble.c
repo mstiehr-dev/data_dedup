@@ -11,12 +11,19 @@ int main(int argc, char **argv) {
 	
 	
 	char *metaFileName = *(argv+1);
-	FILE *metaFile = fopen(metaFileName, "rt");
+	FILE *metaFile = fopen(metaFileName, "rb");
 	if(metaFile==NULL) {
 		fprintf(stderr,"ERROR: could not open %s\n",metaFileName);
 		exit(1);
 	}
 	fseek(metaFile,0,SEEK_SET);
+	struct stat metaFileStats; // Attribute des Journals ermitteln
+	if(fstat(fileno(metaFile),&metaFileStats)==-1) {
+		perror("fstat()");
+		exit(1);
+	}
+	off_t metaFileLen = metaFileStats.st_size;
+	off_t metaFileEntries = metaFileLen / sizeof(long);
 	
 	
 	FILE *journalFile = fopen(JOURNALFILE,"rb");
@@ -49,15 +56,18 @@ int main(int argc, char **argv) {
 	
 	
 	// VORGEHEN: ZEILE AUS METAFILE LESEN, DIESEN DATENSATZ AUS JOURNAL HOLEN, ENTSPRECHENDEN DATENBLOCK EINLESEN UND AN ZIELDATEI ANHÄNGEN
-	char metaFileBuffer[sizeof(long)+sizeof('\n')+1]; // speichert, was aus Metafile gelesen wird 
+	long metaFileInfo; // speichert, was aus Metafile gelesen wird 
 	char dataBuffer[CHUNKSIZE]; // Zwischenspeicher für den Transport von Dump nach Zieldatei
 	long block; // Zeileninhalt des Journals 
 	journalentry journalEntry; // Speichert den jeweiligen Eintrag des Journals 
 	long run=0;
 	long readBytes=0;
-	while(fgets(metaFileBuffer, sizeof(metaFileBuffer), metaFile)) {
-		block = atol(metaFileBuffer);
-		fseek(journalFile, block*sizeof(journalentry),SEEK_SET);
+	while(run<metaFileEntries) {
+		if(fread(&metaFileInfo, sizeof(long), 1, metaFile)<=0) {
+			perror("fread");
+			exit(1);
+		}
+		fseek(journalFile, metaFileInfo*sizeof(journalentry),SEEK_SET);
 		fread(&journalEntry, sizeof(journalentry), 1, journalFile);
 		fseek(storageFile, journalEntry.block, SEEK_SET);
 		fread(dataBuffer, journalEntry.len, 1, storageFile);
@@ -66,7 +76,7 @@ int main(int argc, char **argv) {
 			printf("+");
 			fflush(stdout);
 		}
-		readBytes += journalEntry.len;			
+		readBytes += journalEntry.len;
 	}
 	laufZeit = difftime(time(NULL),startZeit);
 	if(laufZeit<0.5f) laufZeit=0.5f;

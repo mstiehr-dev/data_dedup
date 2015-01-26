@@ -16,22 +16,40 @@ const char * buildString3s(const char *s1, const char *s2, const char *s3) {
 long isHashInMappedJournal(char *hash, void * add, long records) {
 	/* Rückgabewert: Zeilennummer, in der der Hash gefunden wurde, also auch die Blocknummer im dumpfile
 	 * sonst -1 */
-	journalentry tupel;
-	void * tempAdd = add;
+	journalentry *tupel = (journalentry *) add; // zeigt nun auf den ersten Datensatz
 	unsigned long line = 0;
 	while(line<records) {
-		memcpy(&tupel,tempAdd,sizeof(journalentry));
+		/*
+		memcpy(&tupel,tempAdd,sizeof(journalentry)); 
 		if(strstr(tupel.hash,hash)!=NULL) {
 			// Hash gefunden
 			return line;
 		}
 		line++;
-		tempAdd += sizeof(journalentry);
+		tempAdd += sizeof(journalentry); */
+		// besser: 
+		if(memcmp4l(tupel->hash, hash)==0) {
+			// TREFFER!
+			return line;
+		} /* else */
+		line++;
+		tupel++;
 	}
 	return -1;
 }
 
-
+int memcmp4l(char *s, char *t) { // gibt 1 zurück bei Unterscheidung
+	int i = 32/sizeof(long); // 4
+	long *l1 = (long*)s;
+	long *l2 = (long*)t;
+	while(i--) {
+		if(*l1!=l2)
+			return 1;
+		l1++;
+		l2++;
+	}
+	return 0;
+}
 
 void * mapFile(int fd, off_t len, int aux, off_t *saveLen) {
 	off_t tempLen = len+aux;

@@ -8,17 +8,24 @@
 
 //#define DEBUG
 
+/* man könnte auch noch das Metafile binär gestalten und mmapen, alle x-tausend einträge vergrößern etc 
+ * das würde den ständigen schreibaufwand verringern */
+
 int main(int argc, char **argv) {
 	char *inputFileName = NULL;
 	int c = 0;
 	// parse command line arguments:
 	opterr = 0;
-	while((c=getopt(argc, argv, "?f:"))!=-1) { // : -> argument required
+	while((c=getopt(argc, argv, "?f:r"))!=-1) { // : -> argument required
 		switch(c) {
 			case 'h': 	printf("usage: %s -f <filename>\n", *argv); break;
 			case 'f':	if(optarg) inputFileName = optarg; break;
 			case '?':	printf("usage: %s -f <filename>\n", *argv); break;
-			default:	break;
+			case 'r':	// reassemblieren 
+						printf("this feature is not yet implemented. please refer to \"./reassemble\" instead.\n");
+						exit(1);
+			default:	printf("this option is currently not supported. please see '-h'.\n");
+						exit(1);
 		}
 	}
 	if(inputFileName==NULL) {
@@ -71,7 +78,7 @@ int main(int argc, char **argv) {
 	
 	// STELLVERTRETER FÜR DIE DEDUPLIZIERTE DATEI (METAFILE) 
 	char *metaFileName = (char *)buildString3s(METADIR,basename(inputFileName), ".meta");
-	FILE *metaFile = fopen(metaFileName,"rt");
+	FILE *metaFile = fopen(metaFileName,"rb");
 	if(metaFile!=NULL) { // Datei existiert bereits 
 		fprintf(stdout,"WARNING: file \'%s\' already exists.\nOverwrite? (y/N) >",metaFileName);
 		char stdinBuf[2];
@@ -85,7 +92,7 @@ int main(int argc, char **argv) {
 		/* es soll überschrieben werden */
 		fclose(metaFile); // es wird erneut geöffnet (im Schreibmodus) 
 	}
-	metaFile = fopen(metaFileName,"wt"); // nur schreiben, falls existent, löschen 
+	metaFile = fopen(metaFileName,"wb"); // nur schreiben, falls existent, löschen 
 	if(metaFile==NULL) {
 		fprintf(stderr,"ERROR: could not open %s!\n",metaFileName);
 		perror("fopen()");
@@ -119,7 +126,7 @@ int main(int argc, char **argv) {
 		exit(2);
 	}
 	void * VRAM = NULL; // Adresse des Grafikspeichers
-	cudaCopyJournal(VRAM, journalMapAdd, journalMapLen); // auch im VRAM wird ein Puffer reserviert (siehe journalMapLen)
+	cudaCopyJournal(VRAM, journalMapAdd, journalMapLen); // auch im VRAM wird ein zusätzlicher Puffer reserviert (siehe journalMapLen)
 #endif
 
 // BEGINN DER VERARBEITUNG
@@ -152,7 +159,7 @@ int main(int argc, char **argv) {
 		}
 		int current_read = 0; // wie viele Bytes aktuell vorhanden sind 
 		size_t bytesRead; // Summe der konsumierten Bytes 
-		char journalFileChanged; // Flag über Modifizierung des Metafiles 
+		char journalFileChanged; // Flag über Modifizierung des Journalfiles 
 		long infoForMetaFile = -1L; // enthält die jeweilige Zeilennummer des Journals
 		MD5_CTX md5Context;   // Struktur für die Hash-Berechnung
 		unsigned char md[16];
@@ -169,7 +176,7 @@ int main(int argc, char **argv) {
 			MD5_Update(&md5Context, inputFileBuffer+bytesRead, current_read); // hash berechnen 
 			MD5_Final(md, &md5Context); // hash in md[16] speichern
 			int i;
-			for(i=0;i<16;i++)  // String bauen 
+			for(i=0;i<16;i++)  // Hash-String bauen 
 				sprintf(md5String+2*i, "%02x", (unsigned int) md[i]);
 
 // #### HASH SUCHE 
@@ -180,7 +187,7 @@ int main(int argc, char **argv) {
 			hashInJournalPos = isHashInJournalGPU(md5String, VRAM, journalEntries);
 #endif
 			if(hashInJournalPos==-1) { // DER HASH IST UNBEKANNT -> MUSS ANGEFÜGT WERDEN 
-				printf("+"); fflush(stdout);
+				printf("+"); //fflush(stdout);
 				infoForMetaFile = journalEntries++; // in diesem Datensatz wird sich der neue Hash befinden
 				journalentry record; // neuen Eintrag bauen 
 				record.block = storageFileLen; // ganz hinten anfügen -> aktuelles Dateiende
@@ -210,19 +217,23 @@ int main(int argc, char **argv) {
 					cudaCopyJournal(VRAM, journalMapAdd, journalMapLen);
 				#endif
 					laufZeit = difftime(time(NULL),start);
-					printf("\nFortschritt: %3.2f\n", (bytesBufferedTotal*100.0)/inputFileLen);
-					double speed = (bytesBufferedTotal/(1024*1024.0))/laufZeit;
-					printf("aktuelle Geschwindigkeit: %.3f MB/s\n", speed);
+					printf("\n+++++++++++++++++++++++++++++++++++++++++++\n");
+					printf("Fortschritt: %3.2f\n", (bytesBufferedTotal*100.0)/inputFileLen);
+					double speed = bytesBufferedTotal/(1024.0*laufZeit); // in KB/s
+					printf("aktuelle Geschwindigkeit: %.3f KB/s\n", speed);
+					printf("verbleibend: %ld MB [~%.1f s]\n", (inputFileLen-bytesBufferedTotal)/(1024*1024.0), (inputFileLen-bytesBufferedTotal)/speed);
+					printf("+++++++++++++++++++++++++++++++++++++++++++\n");
 				}
 			} else { // DER HASH IST BEREITS BEKANNT
-				printf("."); fflush(stdout);
+				printf("."); //fflush(stdout);
 				infoForMetaFile = hashInJournalPos; // die zeile des journals, in der der hash gefunden wurde, wird ins metafile übernommen 
 			}
 			// Informationen ins Metafile schreiben
 			#ifdef DEBUG 
 			printf("Schreibe in Metafile: %ld\n", infoForMetaFile);
 			#endif
-			fprintf(metaFile, "%ld\n", infoForMetaFile);
+			fwrite(&infoForMetaFile, sizeof(infoForMetaFile), 1, metaFile);
+			//fprintf(metaFile, "%ld\n", infoForMetaFile);
 			if(journalFileChanged) {
 				newBytes += current_read;
 				storageFileLen += current_read;
@@ -240,7 +251,7 @@ int main(int argc, char **argv) {
 		perror("munmap");
 		exit(1);
 	}
-	/* Datei wieder verkleinern */
+	/* Journal-Datei wieder verkleinern */
 	if(ftruncate(fileno(journalFile),journalEntries*sizeof(journalentry))==-1) {
 		perror("ftruncate()");
 		exit(1);

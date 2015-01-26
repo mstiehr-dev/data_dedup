@@ -47,16 +47,17 @@
 	unsigned int bytesBufferSize = 128*1024*1024; // 128 MB
 
 	#define spareEntries 10000
-	#define auxSpace spareEntries*sizeof(journalentry)
+	#define auxSpace spareEntries*sizeof(journalentry) // wird verwendet bei MapFile(), gibt an wieviel zusätzlicher Platz reserviert wird 
 
 	// FUNKTIONEN 
 	const char * buildString3s(const char *, const char *, const char *);
-	void * mapFile(int fd, off_t len, int aux, off_t *saveLen);
-	long isHashInMappedJournal(char *hash, void * add, long records);
-	long isHashinJournalGPU(char *, void *, off_t);
-	char   getRandChar();
-	char * getRandString(size_t n);
-	float  getRandFloat();
+	void  * mapFile(int fd, off_t len, int aux, off_t *saveLen);
+	long 	isHashInMappedJournal(char *hash, void * add, long records);
+	long 	isHashinJournalGPU(char *, void *, off_t);
+	char   	getRandChar();
+	char  *	getRandString(size_t n);
+	float  	getRandFloat();
+	int 	memcmp4l(char *, char *);
 
 	#ifdef USE_CUDA
 		static void cudaCheckError(cudaError_t error, const char *file, int line) {
@@ -71,8 +72,8 @@
 		size_t sharedMemPerBlock;
 		int max_threadsPerBlock;
 		__constant__ char goldenHash[33];	// im Constant-Cache gehaltener Such-String
-		int blocks = 4;	// Konfiguration des Kernelaufrufs: Anzahl der Blöcke
-		int threadsPerBlock = 256;
+		int blocks = 4;	// Konfiguration des Kernelaufrufs: Anzahl der Blöcke || beste Performance: 2* MultiProcessorCount
+		int threadsPerBlock = 1024; // maximum
 		
 		void cudaCopyJournal(void *, void *, off_t);
 		void cudaExtendHashStack(void *, journalentry *);
