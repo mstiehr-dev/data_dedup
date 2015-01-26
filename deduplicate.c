@@ -137,8 +137,10 @@ int main(int argc, char **argv) {
 		fcloseall();
 		exit(2);
 	}
-	void * VRAM = NULL; // Adresse des Grafikspeichers
-	cudaCopyJournal(VRAM, journalMapAdd, journalMapLen); // auch im VRAM wird ein zusätzlicher Puffer reserviert (siehe journalMapLen)
+	void * VRAM; // Adresse des Grafikspeichers
+	CUDA_HANDLE_ERR( cudaMalloc((void**)&VRAM, journalMapLen) ); // GPU Speicher wird alloziert
+	CUDA_HANDLE_ERR( cudaMemcpy(VRAM, journalMapAdd, journalMapLen, cudaMemcpyHostToDevice) ); // Datentransfer von Host Speicher nach VRAM 
+	//cudaCopyJournal(VRAM, journalMapAdd, journalMapLen); // auch im VRAM wird ein zusätzlicher Puffer reserviert (siehe journalMapLen)
 #endif
 
 // BEGINN DER VERARBEITUNG
@@ -199,7 +201,11 @@ int main(int argc, char **argv) {
 #ifndef USE_CUDA
 			hashInJournalPos = isHashInMappedJournal(md5String, journalMapAdd, journalEntries);
 #else 
-			hashInJournalPos = isHashInJournalGPU(md5String, VRAM, journalEntries);
+			//hashInJournalPos = isHashInJournalGPU(md5String, VRAM, journalEntries);
+			CUDA_HANDLE_ERR( cudaMemcpyToSymbol(goldenHash, hash, 32) ); // die gesuchte Prüfsumme wird in den Cache der GPU gebracht 
+			long result = -1L; // nur der erfolgreiche Thread schreibt hier seine ID rein 
+			searchKernel<<<blocks,threadsPerBlock>>>(haystack, &result, stacksize);
+			hashInJournalPos =  *result;
 #endif
 			if(hashInJournalPos==-1) { // DER HASH IST UNBEKANNT -> MUSS ANGEFÜGT WERDEN 
 				//printf("+"); //fflush(stdout);
@@ -209,7 +215,7 @@ int main(int argc, char **argv) {
 				strncpy(record.hash, md5String, 32+1); // die Prüfsumme wird übernommen
 				record.len = current_read; // die Blocklänge 
 				fwrite(inputFileBuffer+bytesRead, current_read, 1, storageFile); // Daten an Dump anfügen
-				void * ret = memcpy(journalMapCurrentEnd, &record, sizeof(journalentry)); // Eintrag im Journal vornehmen 
+				memcpy(journalMapCurrentEnd, &record, sizeof(journalentry)); // Eintrag im Journal vornehmen 
 				#ifdef DEBUG
 					printf("\n%ld -> %s -> %d\n", record.block, record.hash, record.len);
 					printf("journalMapCurrentEnd: %p\n", journalMapCurrentEnd);
@@ -219,7 +225,9 @@ int main(int argc, char **argv) {
 				// auch der Datenbestand im Videospeicher muss erweitert werden 
 					void *t = malloc(sizeof(journalentry));
 					memcpy(t,&record, sizeof(record));
-				cudaExtendHashStack(VRAM,t, (int)journalEntries);
+					CUDA_HANDLE_ERR( cudaMemcpy((void *)(((journalentry *)VRAM)+journalEntries), t, sizeof(journalentry), cudaMemcpyHostToDevice) );
+
+				//cudaExtendHashStack(VRAM,t, (int)journalEntries);
 					free(t);
 			#endif	
 				journalMapCurrentEnd = ((journalentry *)journalMapCurrentEnd) + 1; // neues Journal-Ende 
@@ -232,7 +240,10 @@ int main(int argc, char **argv) {
 				// auch der VRAM muss aktualisiert werden: 
 				#ifdef USE_CUDA
 					CUDA_HANDLE_ERR( cudaFree(VRAM) );
-					cudaCopyJournal(VRAM, journalMapAdd, journalMapLen);
+					CUDA_HANDLE_ERR( cudaMalloc((void**)&VRAM, journalMapLen) ); // GPU Speicher wird alloziert
+					CUDA_HANDLE_ERR( cudaMemcpy(VRAM, journalMapAdd, journalMapLen, cudaMemcpyHostToDevice) ); // Datentransfer von Host Speicher nach VRAM 
+	
+					//cudaCopyJournal(VRAM, journalMapAdd, journalMapLen);
 				#endif
 					laufZeit = difftime(time(NULL),start);
 					delta = progress;
