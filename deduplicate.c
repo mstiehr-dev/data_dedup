@@ -217,15 +217,6 @@ int main(int argc, char **argv) {
 					CUDA_HANDLE_ERR( cudaFree(VRAM) );
 					cudaCopyJournal(VRAM, journalMapAdd, journalMapLen);
 				#endif
-					laufZeit = difftime(time(NULL),start);
-					if(laufZeit<0.1) laufZeit = 0.1;
-					printf("\n+++++++++++++++++++++++++++++++++++++++++++\n");
-					off_t progress = bytesBufferedTotal+bytesRead + current_read;
-					printf("Fortschritt: %3.2f%%\n", (progress*100.0)/inputFileLen);
-					double speed = (progress/1024)/laufZeit; // in KB/s
-					printf("aktuelle Geschwindigkeit: %.3f KB/s\n", speed);
-					printf("verbleibend: %ld MB [~%.1f s]\n", (inputFileLen-progress)/(1024*1024.0), (inputFileLen-progress)/speed);
-					printf("+++++++++++++++++++++++++++++++++++++++++++\n");
 				}
 			} else { // DER HASH IST BEREITS BEKANNT
 				printf("."); //fflush(stdout);
@@ -241,6 +232,15 @@ int main(int argc, char **argv) {
 				newBytes += current_read;
 				storageFileLen += current_read;
 			}
+			laufZeit = difftime(time(NULL),start);
+			if(laufZeit<0.1) laufZeit = 0.1;
+			printf("\n+++++++++++++++++++++++++++++++++++++++++++\n");
+			off_t progress = bytesBufferedTotal+bytesRead + current_read;
+			printf("Fortschritt: %3.2f%%\n", (progress*100.0)/inputFileLen);
+			double speed = (progress/1024)/laufZeit; // in KB/s
+			printf("aktuelle Geschwindigkeit: %.3f KB/s\n", speed);
+			printf("verbleibend: %ld MB [~%.1f s]\n", (inputFileLen-progress)/(1024*1024.0), (inputFileLen-progress)/speed);
+			printf("+++++++++++++++++++++++++++++++++++++++++++\n");
 			bytesRead += current_read;
 		}
 		if(inputFileBuffer) free(inputFileBuffer);
