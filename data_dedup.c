@@ -1,5 +1,5 @@
 /* data_dedup.c */
-/*
+
 #ifdef USE_CUDA
 	#include "data_dedup.cuh"
 	__constant__ char goldenHash[33];	// im Constant-Cache gehaltener Such-String
@@ -8,7 +8,7 @@
 #else
 	#include "data_dedup.h"
 #endif // USE_CUDA
-*/
+
 const char * buildString3s(const char *s1, const char *s2, const char *s3) {
 	size_t l1 = strlen(s1);
 	size_t l2 = strlen(s2);
