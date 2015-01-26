@@ -23,7 +23,7 @@
 	int blocks = 4;	// Konfiguration des Kernelaufrufs: Anzahl der Blöcke || beste Performance: 2* MultiProcessorCount
 	int threadsPerBlock = 1024; // maximum
 	
-	__global__ void searchKernel(void *entrySet, long *result, int entries) {
+	__global__ void searchKernel(void *entrySet, void *result, int entries) {
 		// implementiert memcmp auf Basis von <long> Vergleichen 
 		long idx = threadIdx.x + blockIdx.x * blockDim.x;
 		const long *c1,*c2;
