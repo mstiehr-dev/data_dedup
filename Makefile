@@ -26,6 +26,7 @@ data_dedup.o: data_dedup.c data_dedup.h
 
 
 data_dedup_cuda.o: data_dedup.c
+	cp data_dedup.h data_dedup.cuh
 	cp data_dedup.c data_dedup.cu
 	nvcc -lssl -lcrypto -c -DUSE_CUDA data_dedup.cu -o data_dedup_cuda.o
 clean:
