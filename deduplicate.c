@@ -109,6 +109,7 @@ int memcmp4l(char *s, char *t) { // gibt 1 zurück bei Unterscheidung
 
 void * mapFile(int fd, off_t len, int aux, off_t *saveLen) {
 	off_t tempLen = len+aux;
+	printf("mapFile: %ld + %d = %ld\n", len, aux, tempLen);
 	if(ftruncate(fd,tempLen)==-1) {
 		perror("ftruncate()");
 		exit(1);
