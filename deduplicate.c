@@ -109,7 +109,6 @@ int memcmp4l(char *s, char *t) { // gibt 1 zurück bei Unterscheidung
 
 void * mapFile(int fd, off_t len, int aux, off_t *saveLen) {
 	off_t tempLen = len+aux;
-	printf("mapFile: %ld + %d = %ld\n", len, aux, tempLen);
 	if(ftruncate(fd,tempLen)==-1) {
 		perror("ftruncate()");
 		exit(1);
@@ -328,7 +327,7 @@ int main(int argc, char **argv) {
 					printf("return memcpy       : %p\n", ret);
 				#endif
 			#ifdef USE_CUDA
-				CUDA_HANDLE_ERR( cudaMemcpy((void*)(((journalentry*)VRAM)+journalEntries), (void*)&record, sizeof(record), cudaMemcpyHostToDevice) ); // cudaMemcpy((void *)(((journalentry *)VRAM)+journalEntries)
+				CUDA_HANDLE_ERR( cudaMemcpy(VRAM, (void*)&record, sizeof(record), cudaMemcpyHostToDevice) ); // cudaMemcpy((void *)(((journalentry *)VRAM)+journalEntries)
 			#endif // USE_CUDA
 				journalMapCurrentEnd = ((journalentry *)journalMapCurrentEnd) + 1; // neues Journal-Ende 
 				journalFileChanged = TRUE;
