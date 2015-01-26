@@ -266,7 +266,6 @@ int main(int argc, char **argv) {
 	off_t progress = 0, delta = 0;
 	time_t start = time(NULL);
 	for(bytesBufferedTotal = 0L; bytesBufferedTotal<inputFileLen; bytesBufferedTotal+=bytesActuallyBuffered) {
-		
 		inputFileBuffer = (char *) malloc(sizeof(char)*bytesBufferSize);
 		if(inputFileBuffer==NULL) {
 			printf("ERROR: could not allocate %i bytes of memory",bytesBufferSize);
@@ -311,6 +310,7 @@ int main(int argc, char **argv) {
 #else
 			CUDA_HANDLE_ERR( cudaMemcpyToSymbol(goldenHash, md5String, 32) ); // den Suchhash in den constant cache bringen 
 			searchKernel<<<blocks,threadsPerBlock>>>(VRAM, &hashInJournalPos, journalEntries);
+			printf("kernel result: %10ld\n", hashInJournalPos);
 #endif // USE_CUDA
 			if(hashInJournalPos==-1) { // DER HASH IST UNBEKANNT -> MUSS ANGEFÜGT WERDEN 
 				//printf("+"); //fflush(stdout);
