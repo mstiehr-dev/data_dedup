@@ -18,7 +18,7 @@ size_t sharedMemPerBlock;
 int max_threadsPerBlock;
 
 void cudaCopyJournal(void *, void *, off_t);
-void cudaExtendHashStack(void *, void *);
+void cudaExtendHashStack(void *, void *, int);
 
 time_t startZeit;
 double laufZeit;
@@ -219,7 +219,7 @@ int main(int argc, char **argv) {
 				// auch der Datenbestand im Videospeicher muss erweitert werden 
 					void *t = malloc(sizeof(journalentry));
 					memcpy(t,&record, sizeof(record));
-				cudaExtendHashStack((void*)(((journalentry*)VRAM)+journalEntries),t);
+				cudaExtendHashStack(VRAM,t, journalEntries);
 					free(t);
 			#endif	
 				journalMapCurrentEnd = ((journalentry *)journalMapCurrentEnd) + 1; // neues Journal-Ende 

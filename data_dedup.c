@@ -152,7 +152,7 @@ float getRandFloat() { // liefert eine Zufallszahl zwischen 0 und 1 (inklusive)
 		CUDA_HANDLE_ERR( cudaMemcpy(dev, host, len, cudaMemcpyHostToDevice) ); // Datentransfer von Host Speicher nach VRAM 
 	}
 
-	__host__ void cudaExtendHashStack(void *add, void *entry) {
-		CUDA_HANDLE_ERR( cudaMemcpy(add, entry, sizeof(journalentry), cudaMemcpyHostToDevice) );
+	__host__ void cudaExtendHashStack(void *add, void *entry, int offset) {
+		CUDA_HANDLE_ERR( cudaMemcpy((void *)(((journalentry *)add)+offset), entry, sizeof(journalentry), cudaMemcpyHostToDevice) );
 	}
 #endif // USE_CUDA
