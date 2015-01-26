@@ -235,6 +235,8 @@ int main(int argc, char **argv) {
 	}
 	// VRAM bereitstellen, Daten + Puffer hinkopieren 
 	void * VRAM; 
+	printf("journalFileLen: %10ld\n", journalFileLen);
+	printf("journalMapLen : %10ld\n", journalMapLen);
 	CUDA_HANDLE_ERR( cudaMalloc((void**)&VRAM, journalMapLen) );
 	CUDA_HANDLE_ERR( cudaMemcpy(VRAM, journalMapAdd, journalFileLen, cudaMemcpyHostToDevice) );
 	#endif // USE_CUDA
