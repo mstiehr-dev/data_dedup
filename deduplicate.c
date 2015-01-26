@@ -219,7 +219,7 @@ int main(int argc, char **argv) {
 				#endif
 					laufZeit = difftime(time(NULL),start);
 					printf("\n+++++++++++++++++++++++++++++++++++++++++++\n");
-					long progress = bytesBufferedTotal+bytesActuallyBuffered;
+					long progress = bytesBufferedTotal+bytesRead + current_read;
 					printf("Fortschritt: %3.2f\n", (progress*100.0)/inputFileLen);
 					double speed = progress/(1024.0*laufZeit); // in KB/s
 					printf("aktuelle Geschwindigkeit: %.3f KB/s\n", speed);
