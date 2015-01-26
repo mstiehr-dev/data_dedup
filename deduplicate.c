@@ -228,7 +228,7 @@ int main(int argc, char **argv) {
 					double speed = (delta/(1024.0*1024.0))/laufZeit; // in MB/s
 					printf("aktuelle Geschwindigkeit: %.3f MB/s\n", speed);
 					printf("delta: %.2f MByte, zeit: %.1fs\n", delta/(1024.0*1024.0), laufZeit);
-					printf("verbleibend: %.1f KB [~%.1f s]\n", (inputFileLen-progress)/1024.0, (inputFileLen-progress)/(speed*1024.0));
+					printf("verbleibend: %.1f MB [~%.1f s]\n", (inputFileLen-progress)/(1024.0*1024.0), (inputFileLen-progress)/(speed*1024.0*1024.0));
 					printf("+++++++++++++++++++++++++++++++++++++++++++\n");
 				}
 			} else { // DER HASH IST BEREITS BEKANNT
