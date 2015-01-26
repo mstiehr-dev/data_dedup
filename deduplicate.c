@@ -150,12 +150,12 @@ char * getRandString(size_t n) {
 float getRandFloat() { // liefert eine Zufallszahl zwischen 0 und 1 (inklusive) 
 	return ((float)rand())/RAND_MAX;
 }
-
-cudaDeviceProp prop; // zur Ermittlung der GPU Eckdaten 
-size_t totalGlobalMem; 
-size_t sharedMemPerBlock;
-int max_threadsPerBlock;
-
+#ifdef USE_CUDA
+	cudaDeviceProp prop; // zur Ermittlung der GPU Eckdaten 
+	size_t totalGlobalMem; 
+	size_t sharedMemPerBlock;
+	int max_threadsPerBlock;
+#endif // USE CUDA
 time_t startZeit;
 double laufZeit;
 
