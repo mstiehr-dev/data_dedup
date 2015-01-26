@@ -10,7 +10,41 @@
 
 /* man könnte auch noch das Metafile binär gestalten und mmapen, alle x-tausend einträge vergrößern etc 
  * das würde den ständigen schreibaufwand verringern */
-
+#ifdef USE_CUDA
+	__global__ void searchKernel(void *entrySet, long *result, int entries) {
+		// implementiert memcmp auf Basis von <long> Vergleichen 
+		long idx = threadIdx.x + blockIdx.x * blockDim.x;
+		const long *c1,*c2;
+		char n, diff; // diff: der aktuelle Thread soll nicht öfter laufen, als nötig (auf gesamten Kernelaufruf nicht ausweitbar) 
+		char n_init = 32/sizeof(long); // 4
+		while(idx<entries) { // Threads werden recycled, siehe Inkrement am Fuß der Schleife
+			diff = 0; // FALSE
+			n = n_init; // 4 Vergleiche 
+			// Pointer jeweils auf den Anfang setzen 
+			c1 = (long *)goldenHash;
+			c2 = (long *)((journalentry *)entrySet)[idx].hash;
+			while(n--) {
+				if(*c1 != *c2) { // Abweichung
+					diff = 1;
+					break;
+				}
+				c1++;
+				c2++;
+			}
+			if(!diff) { // treffer
+				*result = idx; // Thread-Index ist die Nummer des Eintrags
+				idx = entries; // dieser thread braucht nicht weitersuchen
+			}
+			idx += blockDim.x * gridDim.x; // aktueller index + (anzahl der Blöcke * Threads pro Block) 
+		}
+		/* ein thread soll noch etwas anderes machen */ 
+		/*
+		if(idx == (entries-1)) {
+			// vielleicht Hash hinzufügen? 
+		} */
+		return;
+	} 
+#endif // USE_CUDA
 
 cudaDeviceProp prop; // zur Ermittlung der GPU Eckdaten 
 size_t totalGlobalMem; 
