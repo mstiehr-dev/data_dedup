@@ -1,5 +1,5 @@
 /* data_dedup.c */
-
+/*
 #ifdef USE_CUDA
 	#include "data_dedup.cuh"
 	__constant__ char goldenHash[33];	// im Constant-Cache gehaltener Such-String
@@ -8,7 +8,7 @@
 #else
 	#include "data_dedup.h"
 #endif // USE_CUDA
-
+*/
 const char * buildString3s(const char *s1, const char *s2, const char *s3) {
 	size_t l1 = strlen(s1);
 	size_t l2 = strlen(s2);
@@ -101,7 +101,7 @@ char * getRandString(size_t n) {
 float getRandFloat() { // liefert eine Zufallszahl zwischen 0 und 1 (inklusive) 
 	return ((float)rand())/RAND_MAX;
 }
-
+/*
 
 #ifdef USE_CUDA
 	__global__ void searchKernel(void *entrySet, long *result, int entries) {
@@ -130,11 +130,11 @@ float getRandFloat() { // liefert eine Zufallszahl zwischen 0 und 1 (inklusive)
 			}
 			idx += blockDim.x * gridDim.x; // aktueller index + (anzahl der Blöcke * Threads pro Block) 
 		}
-		/* ein thread soll noch etwas anderes machen */ 
-		/*
-		if(idx == (entries-1)) {
+		//ein thread soll noch etwas anderes machen 
+		
+		//if(idx == (entries-1)) {
 			// vielleicht Hash hinzufügen? 
-		} */
+		//}
 		return;
 	} 
 
@@ -156,3 +156,5 @@ float getRandFloat() { // liefert eine Zufallszahl zwischen 0 und 1 (inklusive)
 		CUDA_HANDLE_ERR( cudaMemcpy((void *)(((journalentry *)add)+offset), entry, sizeof(journalentry), cudaMemcpyHostToDevice) );
 	}
 #endif // USE_CUDA
+
+*/
