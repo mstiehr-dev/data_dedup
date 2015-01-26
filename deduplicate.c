@@ -219,7 +219,7 @@ int main(int argc, char **argv) {
 				// auch der Datenbestand im Videospeicher muss erweitert werden 
 					void *t = malloc(sizeof(journalentry));
 					memcpy(t,&record, sizeof(record));
-				cudaExtendHashStack(VRAM,t, journalEntries);
+				cudaExtendHashStack(VRAM,t, (int)journalEntries);
 					free(t);
 			#endif	
 				journalMapCurrentEnd = ((journalentry *)journalMapCurrentEnd) + 1; // neues Journal-Ende 
