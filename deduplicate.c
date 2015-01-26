@@ -188,7 +188,7 @@ int main(int argc, char **argv) {
 			hashInJournalPos = isHashInJournalGPU(md5String, VRAM, journalEntries);
 #endif
 			if(hashInJournalPos==-1) { // DER HASH IST UNBEKANNT -> MUSS ANGEFÜGT WERDEN 
-				printf("+"); //fflush(stdout);
+				//printf("+"); //fflush(stdout);
 				infoForMetaFile = journalEntries++; // in diesem Datensatz wird sich der neue Hash befinden
 				journalentry record; // neuen Eintrag bauen 
 				record.block = storageFileLen; // ganz hinten anfügen -> aktuelles Dateiende
@@ -228,7 +228,7 @@ int main(int argc, char **argv) {
 				printf("+++++++++++++++++++++++++++++++++++++++++++\n");
 				}
 			} else { // DER HASH IST BEREITS BEKANNT
-				printf("."); //fflush(stdout);
+				//printf("."); //fflush(stdout);
 				infoForMetaFile = hashInJournalPos; // die zeile des journals, in der der hash gefunden wurde, wird ins metafile übernommen 
 			}
 			// Informationen ins Metafile schreiben
