@@ -150,12 +150,14 @@ char * getRandString(size_t n) {
 float getRandFloat() { // liefert eine Zufallszahl zwischen 0 und 1 (inklusive) 
 	return ((float)rand())/RAND_MAX;
 }
+
 #ifdef USE_CUDA
 	cudaDeviceProp prop; // zur Ermittlung der GPU Eckdaten 
 	size_t totalGlobalMem; 
 	size_t sharedMemPerBlock;
 	int max_threadsPerBlock;
 #endif // USE CUDA
+
 time_t startZeit;
 double laufZeit;
 
@@ -214,7 +216,7 @@ int main(int argc, char **argv) {
 	off_t journalFileLen = journalFileStats.st_size;
 	off_t journalEntries = journalFileLen / sizeof(journalentry);	
 	off_t journalMapLen = 0L;
-	// Journal mappen + Platz für 100 Einträge 
+	// Journal mappen + Platz für 10000 Einträge 
 	void *journalMapAdd = mapFile(fileno(journalFile),journalFileLen, auxSpace, &journalMapLen);
 	void *journalMapCurrentEnd = ((char *)journalMapAdd) + journalFileLen; // Hilfszeiger soll ans Dateiende zeigen 
 	#ifdef DEBUG
@@ -223,6 +225,19 @@ int main(int argc, char **argv) {
 		printf("JournalMapLen : %ld\n", journalMapLen);
 		printf("JournalMapAdd : %p\n", journalMapAdd);
 	#endif
+	#ifdef USE_CUDA 
+	if(journalMapLen> 1027604480) { // gemessen 
+		// Datenmenge übersteigt Grafikspeicher 
+		printf( "Das Datenvolumen übersteigt die Speicherkapazität der Grafikkarte.\n"
+				"In der aktuellen Version wird dieser Fall werden maximal 25.675 mio. Datensätze unterstützt. Beende.\n");
+		fcloseall();
+		exit(2);
+	}
+	// VRAM bereitstellen, Daten + Puffer hinkopieren 
+	void * VRAM; 
+	CUDA_HANDLE_ERR( cudaMalloc((void**)&VRAM, journalMapLen) );
+	CUDA_HANDLE_ERR( cudaMemcpy(VRAM, journalMapAdd, journalFileLen, cudaMemcpyHostToDevice) );
+	#endif // USE_CUDA
 	
 	// STELLVERTRETER FÜR DIE DEDUPLIZIERTE DATEI (METAFILE) 
 	char *metaFileName = (char *)buildString3s(METADIR,basename(inputFileName), ".meta");
@@ -263,23 +278,6 @@ int main(int argc, char **argv) {
 	}
 	off_t storageFileLen = storageFileStats.st_size;
 
-/*	
-// #### VERARBEITUNG AUF GPU
-#ifdef USE_CUDA
-	// Journaldaten in VRAM geben
-	if(journalMapLen> 1027604480) { // gemessen 
-		// Datenmenge übersteigt Grafikspeicher 
-		printf( "Das Datenvolumen übersteigt die Speicherkapazität der Grafikkarte.\n"
-				"In der aktuellen Version wird dieser Fall werden maximal 25.675 mio. Datensätze unterstützt. Beende.\n");
-		fcloseall();
-		exit(2);
-	}
-	void * VRAM; // Adresse des Grafikspeichers
-	CUDA_HANDLE_ERR( cudaMalloc((void**)&VRAM, journalMapLen) ); // GPU Speicher wird alloziert
-	CUDA_HANDLE_ERR( cudaMemcpy(VRAM, journalMapAdd, journalMapLen, cudaMemcpyHostToDevice) ); // Datentransfer von Host Speicher nach VRAM 
-	//cudaCopyJournal(VRAM, journalMapAdd, journalMapLen); // auch im VRAM wird ein zusätzlicher Puffer reserviert (siehe journalMapLen)
-#endif
-*/
 // BEGINN DER VERARBEITUNG
 	startZeit = time(NULL);	
 	long newBytes = 0; // Blöcke, die neu ins Journal aufgenommen wurden 
@@ -303,7 +301,6 @@ int main(int argc, char **argv) {
 			exit(1);
 		}
 		bytesActuallyBuffered = fread(inputFileBuffer,1,bytesBufferSize,inputFile); // liest 1*bytesBufferSize aus inputFile nach inputFileBuffer (Rückgabewert ist Anzahl der gelesenen Bytes, wenn size 1 ist )
-		//bytesActuallyBuffered = (inputFileLen-bytesBufferedTotal >= bytesBufferSize) ? bytesBufferSize : (inputFileLen-bytesBufferedTotal); // ermitteln, wie viel gelesen wurde 
 		
 		// FÜR JEDEN CHUNK EINEN HASH BERECHNEN UND MIT DEM JOURNAL VERGLEICHEN 
 		md5String = (char *) malloc(sizeof(char)*(32+1));
@@ -338,14 +335,9 @@ int main(int argc, char **argv) {
 #ifndef USE_CUDA
 			hashInJournalPos = isHashInMappedJournal(md5String, journalMapAdd, journalEntries);
 #else
-/* 
-			//hashInJournalPos = isHashInJournalGPU(md5String, VRAM, journalEntries);
-			CUDA_HANDLE_ERR( cudaMemcpyToSymbol(goldenHash, md5String, 32) ); // die gesuchte Prüfsumme wird in den Cache der GPU gebracht 
-			long result = -1L; // nur der erfolgreiche Thread schreibt hier seine ID rein 
-			searchKernel<<<1,1>>>(journalMapAdd, &result, journalEntries);
-			hashInJournalPos = result;
-*/
-#endif
+			CUDA_HANDLE_ERR( cudaMemcpyToSymbol(goldenHash, md5String, 32) ); // den Suchhash in den constant cache bringen 
+			searchKernel<<<blocks,threadsPerBlock>>>(VRAM, &hashInJournalPos, journalEntries);
+#endif // USE_CUDA
 			if(hashInJournalPos==-1) { // DER HASH IST UNBEKANNT -> MUSS ANGEFÜGT WERDEN 
 				//printf("+"); //fflush(stdout);
 				infoForMetaFile = journalEntries++; // in diesem Datensatz wird sich der neue Hash befinden
@@ -361,16 +353,8 @@ int main(int argc, char **argv) {
 					printf("return memcpy       : %p\n", ret);
 				#endif
 			#ifdef USE_CUDA
-			/*
-				// auch der Datenbestand im Videospeicher muss erweitert werden 
-					void *t = malloc(sizeof(journalentry));
-					memcpy(t,&record, sizeof(record));
-					CUDA_HANDLE_ERR( cudaMemcpy((void *)(((journalentry *)VRAM)+journalEntries), t, sizeof(journalentry), cudaMemcpyHostToDevice) );
-
-				//cudaExtendHashStack(VRAM,t, (int)journalEntries);
-					free(t);
-			*/
-			#endif	
+				CUDA_HANDLE_ERR( cudaMemcpy(VRAM, (void*)&record, sizeof(record), cudaMemcpyHostToDevice) ); // cudaMemcpy((void *)(((journalentry *)VRAM)+journalEntries)
+			#endif // USE_CUDA
 				journalMapCurrentEnd = ((journalentry *)journalMapCurrentEnd) + 1; // neues Journal-Ende 
 				journalFileChanged = TRUE;
 				if(journalEntries*sizeof(journalentry) >= journalMapLen) {
@@ -379,15 +363,11 @@ int main(int argc, char **argv) {
 					journalMapAdd = mapFile(fileno(journalFile),journalMapLen, auxSpace, &journalMapLen); // remap 
 					journalMapCurrentEnd = ((journalentry*)journalMapAdd) + journalEntries;
 				// auch der VRAM muss aktualisiert werden: 
-				#ifdef USE_CUDA
-				/*
-					CUDA_HANDLE_ERR( cudaFree(VRAM) );
-					CUDA_HANDLE_ERR( cudaMalloc((void**)&VRAM, journalMapLen) ); // GPU Speicher wird alloziert
-					CUDA_HANDLE_ERR( cudaMemcpy(VRAM, journalMapAdd, journalMapLen, cudaMemcpyHostToDevice) ); // Datentransfer von Host Speicher nach VRAM 
-	
-					//cudaCopyJournal(VRAM, journalMapAdd, journalMapLen);
-				*/
-				#endif
+					#ifdef USE_CUDA
+						CUDA_HANDLE_ERR( cudaFree(VRAM) );
+						CUDA_HANDLE_ERR( cudaMalloc((void**)&VRAM, journalMapLen) ); // GPU Speicher wird alloziert
+						CUDA_HANDLE_ERR( cudaMemcpy(VRAM, journalMapAdd, journalEntries*sizeof(journalentry), cudaMemcpyHostToDevice) ); // Datentransfer von Host Speicher nach VRAM 
+					#endif // USE_CUDA
 					laufZeit = difftime(time(NULL),start);
 					delta = progress;
 					progress = bytesBufferedTotal+bytesRead + current_read;
@@ -438,8 +418,7 @@ int main(int argc, char **argv) {
 	if(metaFileName) free(metaFileName);
 	fcloseall();
 #ifdef USE_CUDA 
-	/* der VRAM muss freigegeben werden  
-	CUDA_HANDLE_ERR( cudaFree(VRAM) ); */
+	CUDA_HANDLE_ERR( cudaFree(VRAM) ); 
 #endif
 	printf("\n\n*** successfully deduplicated \"%s\" in %.1fs [%.3f MB/s] ***\n", inputFileName, laufZeit, speed);
 	printf("*** added %ld Bytes to storage dump ***\n",newBytes);
