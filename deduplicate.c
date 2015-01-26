@@ -1,20 +1,28 @@
 /* deduplicate.c */
 
-#ifdef USE_CUDA
-	#include "data_dedup.cuh"
-#else 
-	#include "data_dedup.h"
-#endif
+
+#include "data_dedup.h"
 
 //#define DEBUG
 
-/* man könnte auch noch das Metafile binär gestalten und mmapen, alle x-tausend einträge vergrößern etc 
- * das würde den ständigen schreibaufwand verringern */
 #ifdef USE_CUDA
-	#include "data_dedup.cuh"
+	static void cudaCheckError(cudaError_t error, const char *file, int line) {
+		if(error!=cudaSuccess) {
+			printf("%s in %s at line %d\n", cudaGetErrorString(error), file, line);
+			exit(EXIT_FAILURE);
+		}
+	}
+	#define CUDA_HANDLE_ERR(err) (cudaCheckError(err,__FILE__, __LINE__))
+	
+
+	#ifndef CUDA_HANDLE_ERR
+		#define CUDA_HANDLE_ERR(err) (cudaCheckError(err, __FILE__, __LINE__))
+	#endif // CUDA_HANDLE_ERR
+	
 	__constant__ char goldenHash[33];	// im Constant-Cache gehaltener Such-String
 	int blocks = 4;	// Konfiguration des Kernelaufrufs: Anzahl der Blöcke || beste Performance: 2* MultiProcessorCount
 	int threadsPerBlock = 1024; // maximum
+	
 	__global__ void searchKernel(void *entrySet, long *result, int entries) {
 		// implementiert memcmp auf Basis von <long> Vergleichen 
 		long idx = threadIdx.x + blockIdx.x * blockDim.x;
@@ -50,13 +58,103 @@
 	} 
 #endif // USE_CUDA
 
+const char * buildString3s(const char *s1, const char *s2, const char *s3) {
+	size_t l1 = strlen(s1);
+	size_t l2 = strlen(s2);
+	size_t l3 = strlen(s3);
+	char *newStr = (char *) malloc(sizeof(char)*(l1+l2+l3+1));
+	strncpy(newStr, s1, l1);
+	strncpy(newStr+l1,s2,l2);
+	strncpy(newStr+l1+l2,s3,l3);
+	return newStr;
+}
+
+long isHashInMappedJournal(char *hash, void * add, long records) {
+	/* Rückgabewert: Zeilennummer, in der der Hash gefunden wurde, also auch die Blocknummer im dumpfile
+	 * sonst -1 */
+	journalentry *tupel = (journalentry *) add; // zeigt nun auf den ersten Datensatz
+	unsigned long line = 0;
+	while(line<records) {
+		/*
+		memcpy(&tupel,tempAdd,sizeof(journalentry)); 
+		if(strstr(tupel.hash,hash)!=NULL) {
+			// Hash gefunden
+			return line;
+		}
+		line++;
+		tempAdd += sizeof(journalentry); */
+		// besser: 
+		if(memcmp4l(tupel->hash, hash)==0) {
+			// TREFFER!
+			return line;
+		} /* else */
+		line++;
+		tupel++;
+	}
+	return -1;
+}
+
+int memcmp4l(char *s, char *t) { // gibt 1 zurück bei Unterscheidung
+	int i = 32/sizeof(long); // 4
+	long *l1 = (long*)s;
+	long *l2 = (long*)t;
+	while(i--) {
+		if(*l1!=*l2)
+			return 1;
+		l1++;
+		l2++;
+	}
+	return 0;
+}
+
+void * mapFile(int fd, off_t len, int aux, off_t *saveLen) {
+	off_t tempLen = len+aux;
+	if(ftruncate(fd,tempLen)==-1) {
+		perror("ftruncate()");
+		exit(1);
+	}
+	void *add = mmap(NULL, tempLen, PROT_READ|PROT_WRITE, MAP_SHARED, fd, 0);
+	if(add==MAP_FAILED) {
+		perror("mmap()");
+		printf("%s\n",strerror(errno));
+		exit(1);
+	}	
+	*saveLen = tempLen;
+	return add;
+}
+
+
+char getRandChar() {
+	//liefert ein zufälliges druckbares Zeichen 
+	/* Druckbare Zeichen beginnen bei 32 (A) und enden bei 126 (~) -> Spanne von 94 */
+	const char start = 'A';
+	const char end   = '~';
+	const char range = end-start;
+	char  c = 32 + getRandFloat()*range; 
+	return c;
+}
+
+char * getRandString(size_t n) {
+	// liefert eine zufällige Zeichenkette 
+	char *str = (char *)malloc(n*sizeof(char)+1);
+	if(str==NULL) {
+		perror("malloc() failed in getRandString()");
+		exit(1);
+	}
+	str[n] = '\0'; // Stringende 
+	while(n--)
+		str[n] = getRandChar();
+	return str;
+}
+
+float getRandFloat() { // liefert eine Zufallszahl zwischen 0 und 1 (inklusive) 
+	return ((float)rand())/RAND_MAX;
+}
+
 cudaDeviceProp prop; // zur Ermittlung der GPU Eckdaten 
 size_t totalGlobalMem; 
 size_t sharedMemPerBlock;
 int max_threadsPerBlock;
-
-void cudaCopyJournal(void *, void *, off_t);
-void cudaExtendHashStack(void *, void *, int);
 
 time_t startZeit;
 double laufZeit;
@@ -164,7 +262,8 @@ int main(int argc, char **argv) {
 		exit(1);
 	}
 	off_t storageFileLen = storageFileStats.st_size;
-	
+
+/*	
 // #### VERARBEITUNG AUF GPU
 #ifdef USE_CUDA
 	// Journaldaten in VRAM geben
@@ -180,7 +279,7 @@ int main(int argc, char **argv) {
 	CUDA_HANDLE_ERR( cudaMemcpy(VRAM, journalMapAdd, journalMapLen, cudaMemcpyHostToDevice) ); // Datentransfer von Host Speicher nach VRAM 
 	//cudaCopyJournal(VRAM, journalMapAdd, journalMapLen); // auch im VRAM wird ein zusätzlicher Puffer reserviert (siehe journalMapLen)
 #endif
-
+*/
 // BEGINN DER VERARBEITUNG
 	startZeit = time(NULL);	
 	long newBytes = 0; // Blöcke, die neu ins Journal aufgenommen wurden 
@@ -238,12 +337,14 @@ int main(int argc, char **argv) {
 			long hashInJournalPos = -1L;
 #ifndef USE_CUDA
 			hashInJournalPos = isHashInMappedJournal(md5String, journalMapAdd, journalEntries);
-#else 
+#else
+/* 
 			//hashInJournalPos = isHashInJournalGPU(md5String, VRAM, journalEntries);
 			CUDA_HANDLE_ERR( cudaMemcpyToSymbol(goldenHash, md5String, 32) ); // die gesuchte Prüfsumme wird in den Cache der GPU gebracht 
 			long result = -1L; // nur der erfolgreiche Thread schreibt hier seine ID rein 
 			searchKernel<<<1,1>>>(journalMapAdd, &result, journalEntries);
 			hashInJournalPos = result;
+*/
 #endif
 			if(hashInJournalPos==-1) { // DER HASH IST UNBEKANNT -> MUSS ANGEFÜGT WERDEN 
 				//printf("+"); //fflush(stdout);
@@ -260,6 +361,7 @@ int main(int argc, char **argv) {
 					printf("return memcpy       : %p\n", ret);
 				#endif
 			#ifdef USE_CUDA
+			/*
 				// auch der Datenbestand im Videospeicher muss erweitert werden 
 					void *t = malloc(sizeof(journalentry));
 					memcpy(t,&record, sizeof(record));
@@ -267,6 +369,7 @@ int main(int argc, char **argv) {
 
 				//cudaExtendHashStack(VRAM,t, (int)journalEntries);
 					free(t);
+			*/
 			#endif	
 				journalMapCurrentEnd = ((journalentry *)journalMapCurrentEnd) + 1; // neues Journal-Ende 
 				journalFileChanged = TRUE;
@@ -277,11 +380,13 @@ int main(int argc, char **argv) {
 					journalMapCurrentEnd = ((journalentry*)journalMapAdd) + journalEntries;
 				// auch der VRAM muss aktualisiert werden: 
 				#ifdef USE_CUDA
+				/*
 					CUDA_HANDLE_ERR( cudaFree(VRAM) );
 					CUDA_HANDLE_ERR( cudaMalloc((void**)&VRAM, journalMapLen) ); // GPU Speicher wird alloziert
 					CUDA_HANDLE_ERR( cudaMemcpy(VRAM, journalMapAdd, journalMapLen, cudaMemcpyHostToDevice) ); // Datentransfer von Host Speicher nach VRAM 
 	
 					//cudaCopyJournal(VRAM, journalMapAdd, journalMapLen);
+				*/
 				#endif
 					laufZeit = difftime(time(NULL),start);
 					delta = progress;
@@ -333,8 +438,8 @@ int main(int argc, char **argv) {
 	if(metaFileName) free(metaFileName);
 	fcloseall();
 #ifdef USE_CUDA 
-	/* der VRAM muss freigegeben werden */ 
-	CUDA_HANDLE_ERR( cudaFree(VRAM) );
+	/* der VRAM muss freigegeben werden  
+	CUDA_HANDLE_ERR( cudaFree(VRAM) ); */
 #endif
 	printf("\n\n*** successfully deduplicated \"%s\" in %.1fs [%.3f MB/s] ***\n", inputFileName, laufZeit, speed);
 	printf("*** added %ld Bytes to storage dump ***\n",newBytes);

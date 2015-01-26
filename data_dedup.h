@@ -58,20 +58,6 @@
 	float  	getRandFloat();
 	int 	memcmp4l(char *, char *);
 
-	#ifdef USE_CUDA
-		static void cudaCheckError(cudaError_t error, const char *file, int line) {
-			if(error!=cudaSuccess) {
-				printf("%s in %s at line %d\n", cudaGetErrorString(error), file, line);
-				exit(EXIT_FAILURE);
-			}
-		}
-		#define CUDA_HANDLE_ERR(err) (cudaCheckError(err,__FILE__, __LINE__))
-		
-
-		#ifndef CUDA_HANDLE_ERR
-			#define CUDA_HANDLE_ERR(err) (cudaCheckError(err, __FILE__, __LINE__))
-		#endif // CUDA_HANDLE_ERR
-	#endif
 
 
 #endif // __PSEM__
