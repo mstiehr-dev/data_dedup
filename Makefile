@@ -18,6 +18,9 @@ displayjournal:
 reassemble:
 	$(CC) $(LDFLAGS) reassemble.c data_dedup.o -o reassemble
 
+displaymetafile: 
+	$(CC) $(LDFLAGS) displaymetafile.c -o displaymetafile
+	
 data_dedup.o: data_dedup.c data_dedup.h
 	$(CC) $(LDFLAGS) -c data_dedup.c
 
