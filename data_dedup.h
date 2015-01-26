@@ -41,8 +41,8 @@
 		short len;
 	} journalentry;
 
-	time_t startZeit;
-	double laufZeit;
+	extern time_t startZeit;
+	extern double laufZeit;
 
 	
 
@@ -75,8 +75,8 @@
 			extern size_t sharedMemPerBlock;
 			extern int max_threadsPerBlock;
 			extern __constant__ char goldenHash[33];	// im Constant-Cache gehaltener Such-String
-			int blocks = 4;	// Konfiguration des Kernelaufrufs: Anzahl der Blöcke || beste Performance: 2* MultiProcessorCount
-			int threadsPerBlock = 1024; // maximum
+			extern int blocks;	// Konfiguration des Kernelaufrufs: Anzahl der Blöcke || beste Performance: 2* MultiProcessorCount
+			extern int threadsPerBlock; // maximum
 			
 			void cudaCopyJournal(void *, void *, off_t);
 			void cudaExtendHashStack(void *, journalentry *);
