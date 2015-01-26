@@ -4,7 +4,7 @@
 #include "data_dedup.h"
 
 int main(int argc, char **argv) {
-	if(args!=2) {
+	if(argc!=2) {
 		fprintf(stderr, "usage: %s <metafile>\n", argv[0]);
 		exit(1);
 	}
@@ -25,9 +25,9 @@ int main(int argc, char **argv) {
 	/* werte rausholen */ 
 	long zeile=0;
 	while(zeile<records) {
-		long entry
+		long entry;
 		fread(&entry,sizeof(entry),1,metaFile);
-		printf("%ldn",entry);
+		printf("%ld\n",entry);
 		zeile++;
 	}
 	
