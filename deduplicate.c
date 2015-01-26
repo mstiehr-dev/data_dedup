@@ -353,7 +353,7 @@ int main(int argc, char **argv) {
 					printf("return memcpy       : %p\n", ret);
 				#endif
 			#ifdef USE_CUDA
-				CUDA_HANDLE_ERR( cudaMemcpy(VRAM, (void*)&record, sizeof(record), cudaMemcpyHostToDevice) ); // cudaMemcpy((void *)(((journalentry *)VRAM)+journalEntries)
+				//CUDA_HANDLE_ERR( cudaMemcpy(VRAM, (void*)&record, sizeof(record), cudaMemcpyHostToDevice) ); // cudaMemcpy((void *)(((journalentry *)VRAM)+journalEntries)
 			#endif // USE_CUDA
 				journalMapCurrentEnd = ((journalentry *)journalMapCurrentEnd) + 1; // neues Journal-Ende 
 				journalFileChanged = TRUE;
