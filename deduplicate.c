@@ -34,7 +34,7 @@
 			n = n_init; // 4 Vergleiche 
 			// Pointer jeweils auf den Anfang setzen 
 			c1 = (long *)goldenHash;
-			c2 = (long *)((journalentry *)entrySet)[idx].hash;
+			c2 = (long *)(((journalentry *)entrySet)[idx].hash);
 			while(n--) {
 				if(*c1 != *c2) { // Abweichung
 					diff = 1;
@@ -211,6 +211,8 @@ int main(int argc, char **argv) {
 	printf("journalMapLen : %10ld\n", journalMapLen);
 	CUDA_HANDLE_ERR( cudaMalloc((void**)&VRAM, journalMapLen) );
 	CUDA_HANDLE_ERR( cudaMemcpy(VRAM, journalMapAdd, journalFileLen, cudaMemcpyHostToDevice) );
+	void * VResult;
+	CUDA_HANDLE_ERR( cudaMalloc((void**)&VResult, sizeof(long)) );
 	#endif // USE_CUDA
 	
 	// STELLVERTRETER FÜR DIE DEDUPLIZIERTE DATEI (METAFILE) 
@@ -309,7 +311,8 @@ int main(int argc, char **argv) {
 			hashInJournalPos = isHashInMappedJournal(md5String, journalMapAdd, journalEntries);
 #else
 			CUDA_HANDLE_ERR( cudaMemcpyToSymbol(goldenHash, md5String, 32) ); // den Suchhash in den constant cache bringen 
-			searchKernel<<<blocks,threadsPerBlock>>>(VRAM, &hashInJournalPos, journalEntries);
+			searchKernel<<<blocks,threadsPerBlock>>>(VRAM, VResult, journalEntries);
+			CUDA_HANDLE_ERR( cudaMemcpy((void*)&hashInJournalPos, VResult, sizeof(long), cudaMemcpyDeviceToHost) );
 			printf("kernel result: %10ld\n", hashInJournalPos);
 #endif // USE_CUDA
 			if(hashInJournalPos==-1) { // DER HASH IST UNBEKANNT -> MUSS ANGEFÜGT WERDEN 
