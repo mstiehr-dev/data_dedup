@@ -220,7 +220,8 @@ int main(int argc, char **argv) {
 					cudaCopyJournal(VRAM, journalMapAdd, journalMapLen);
 				#endif
 					laufZeit = difftime(time(NULL),start);
-					if(laufZeit<0.1) laufZeit = 0.1;
+					if(laufZeit<0.1) 
+						break;
 					printf("\n+++++++++++++++++++++++++++++++++++++++++++\n");
 					delta = progress;
 					progress = bytesBufferedTotal+bytesRead + current_read;
