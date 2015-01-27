@@ -198,7 +198,6 @@ int main(int argc, char **argv) {
 		printf("JournalEntries: %ld\n", journalEntries);
 		printf("JournalMapLen : %ld\n", journalMapLen);
 		printf("JournalMapAdd : %p\n", journalMapAdd);
-		long hits = 0;
 	#endif
 #ifdef USE_CUDA 
 	if(journalMapLen> 1027604480) { // gemessen 
@@ -345,7 +344,8 @@ int main(int argc, char **argv) {
 #endif // USE_CUDA
 				journalMapCurrentEnd = ((journalentry *)journalMapCurrentEnd) + 1; // neues Journal-Ende 
 				journalFileChanged = TRUE;
-				if(++journalEntries*sizeof(journalentry) >= journalMapLen) {
+				journalEntries++;
+				if(journalEntries*sizeof(journalentry) >= journalMapLen) {
 				// die Journal-Datei muss vergrößert und erneut gemappt werden 
 					munmap(journalMapAdd, journalMapLen); // synchronisiert mit Dateisystem 
 					journalMapAdd = mapFile(fileno(journalFile),journalMapLen, auxSpace, &journalMapLen); // remap 
@@ -356,6 +356,7 @@ int main(int argc, char **argv) {
 						CUDA_HANDLE_ERR( cudaMalloc((void**)&VRAM, journalMapLen) ); // GPU Speicher wird alloziert
 						CUDA_HANDLE_ERR( cudaMemcpy(VRAM, journalMapAdd, journalEntries*sizeof(journalentry), cudaMemcpyHostToDevice) ); // Datentransfer von Host Speicher nach VRAM 
 #endif // USE_CUDA
+					// aktuelle Statistik ausgeben 
 					laufZeit = difftime(time(NULL),start);
 					delta = progress;
 					progress = bytesBufferedTotal+bytesRead + current_read;
@@ -374,9 +375,6 @@ int main(int argc, char **argv) {
 			} else { // DER HASH IST BEREITS BEKANNT
 				//printf("."); //fflush(stdout);
 				infoForMetaFile = *hashInJournalPos; // die zeile des journals, in der der hash gefunden wurde, wird ins metafile übernommen 
-			#ifdef DEBUG
-				hits++;
-			#endif
 			}
 			// Informationen ins Metafile schreiben
 		#ifdef DEBUG 
@@ -406,7 +404,6 @@ int main(int argc, char **argv) {
 	printf("journalentries: %10ld\n",journalEntries);
 	printf("needed space  : %10ld\n", journalEntries * sizeof(journalentry));
 	printf("length of map : %10ld\n", journalMapLen);
-	printf("hits          : %10ld\n", hits);
 #endif // DEBUG
 	if(ftruncate(fileno(journalFile),journalEntries*sizeof(journalentry))==-1) {
 		perror("ftruncate()");
