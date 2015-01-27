@@ -396,9 +396,9 @@ int main(int argc, char **argv) {
 	}
 	/* Journal-Datei wieder verkleinern */
 #ifdef DEBUG
-	printf("journalentries: %ld\n",journalEntries);
-	printf("needed space: %ld\n", journalEntries * sizeof(journalentry));
-	printf("length of map: %p\n", journalMapCurrentEnd-journalMapAdd);
+	printf("journalentries: %10ld\n",journalEntries);
+	printf("needed space  : %10ld\n", journalEntries * sizeof(journalentry));
+	printf("length of map : %10ld\n", journalMapLen);
 #endif // DEBUG
 	if(ftruncate(fileno(journalFile),journalEntries*sizeof(journalentry))==-1) {
 		perror("ftruncate()");
