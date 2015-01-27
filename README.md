@@ -1,9 +1,9 @@
-#*currently broken - new deadline 29/1/15*
+#*Status - Ready to use!*
 
 ##description
 + files are cut in blocks of 512 byte
 + unique blocks are stored in a huge dump file and organized in a central index journal 
-+ deduplicated file is represented by a text file containing indices of the original blocks 
++ deduplicated file is represented by a binary file containing indices of the original blocks 
 
 ##dependencies
 + **GNU/Linux**
@@ -12,7 +12,7 @@
 + [cuda-sdk]
 
 ##usage
-- deduplicate \<filename\>
+- deduplicate{Host,GPU} -i \<filename\>
 - reassemble \<metafile\>
 
 
