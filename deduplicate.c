@@ -312,10 +312,10 @@ int main(int argc, char **argv) {
 			CUDA_HANDLE_ERR( cudaMemcpyToSymbol(goldenHash, md5String, 32) ); // den Suchhash in den constant cache bringen 
 			searchKernel<<<blocks,threadsPerBlock>>>(VRAM, VResult, journalEntries);
 			CUDA_HANDLE_ERR( cudaMemcpy(hashInJournalPos, VResult, sizeof(long), cudaMemcpyDeviceToHost) );
-			printf("kernel result: %10ld\n", hashInJournalPos);
+			printf("kernel result: %10ld\n", *hashInJournalPos);
 			printf("journalEntries: %10ld\n", journalEntries);
 #endif // USE_CUDA
-			if(*hashInJournalPos==-1) { // DER HASH IST UNBEKANNT -> MUSS ANGEFÜGT WERDEN 
+			if(*hashInJournalPos==-1L) { // DER HASH IST UNBEKANNT -> MUSS ANGEFÜGT WERDEN 
 				//printf("+"); //fflush(stdout);
 				infoForMetaFile = journalEntries++; // in diesem Datensatz wird sich der neue Hash befinden
 				journalentry record; // neuen Eintrag bauen 
