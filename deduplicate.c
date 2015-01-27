@@ -231,15 +231,16 @@ int main(int argc, char **argv) {
 		/* es soll überschrieben werden */
 		fclose(metaFile); // es wird erneut geöffnet (im Schreibmodus) 
 	}
-	metaFile = fopen(metaFileName,"wb"); // nur schreiben, falls existent, löschen 
+	metaFile = fopen(metaFileName,"a+b"); // nur schreiben, falls existent, löschen 
 	if(metaFile==NULL) {
 		fprintf(stderr,"ERROR: could not open %s!\n",metaFileName);
 		perror("fopen()");
 		exit(1);
 	}
+	fseek(metaFile, 0, SEEK_SET);
 	// Metafile mappen (Reduktion von I/O) 
 	off_t metaMapLen = 0L;
-	const int metaMapBufSize = 10*1024*1024; 
+	const int metaMapBufSize = 10*1024*1024; // 10MB 
 	void * metaMapAdd = mapFile(fileno(metaFile), 0, metaMapBufSize, &metaMapLen);
 	void * metaMapCurrentEnd = metaMapAdd;
 	
