@@ -3,7 +3,7 @@
 
 #include "data_dedup.h"
 
-#define DEBUG
+//#define DEBUG
 
 #ifdef USE_CUDA
 	static void cudaCheckError(cudaError_t error, const char *file, int line) {
@@ -135,19 +135,18 @@ void * mapFile(int fd, off_t len, int aux, off_t *saveLen) {
 time_t startZeit;
 double laufZeit;
 
+
 int main(int argc, char **argv) {
 	char *inputFileName = NULL;
 	int c = 0;
 	// parse command line arguments:
 	opterr = 0;
-	while((c=getopt(argc, argv, "?f:r"))!=-1) { // : -> argument required
+	while((c=getopt(argc, argv, "?t:b:i:d"))!=-1) { // : -> argument required
 		switch(c) {
-			case 'h': 	printf("usage: %s -f <filename>\n", *argv); break;
-			case 'f':	if(optarg) inputFileName = optarg; break;
-			case '?':	printf("usage: %s -f <filename>\n", *argv); break;
-			case 'r':	// reassemblieren 
-						printf("this feature is not yet implemented. please refer to \"./reassemble\" instead.\n");
-						exit(1);
+			case 'i':	if(optarg) inputFileName = optarg; break;
+			case '?':	printf("usage: %s -i <filename>\n", *argv); break;
+			case 't':	if(optarg) threadsPerBlock = atoi(optarg); break;
+			case 'b':	if(optarg) blocks = atoi(optarg); break; 
 			default:	printf("this option is currently not supported. please see '-h'.\n");
 						exit(1);
 		}
@@ -237,7 +236,11 @@ int main(int argc, char **argv) {
 		perror("fopen()");
 		exit(1);
 	}
-	
+	// Metafile mappen (Reduktion von I/O) 
+	off_t metaMapLen = 0L;
+	const int metaMapBufSize = 10*1024*1024; 
+	void * metaMapAdd = mapFile(fileno(metaFile), 0, metaMapBufSize, &metaMapLen);
+	void * metaMapCurrentEnd = metaMapAdd;
 	
 	// DATENHALDE ÖFFNEN
 	FILE *storageFile = fopen(STORAGEDUMP, "a+b");
@@ -269,7 +272,7 @@ int main(int argc, char **argv) {
 	printf("deduplicating \"%s\" [%.3f MB]\n",inputFileName, inputFileLenMB);
 	char *md5String = (char *) NULL;
 	// Die Schleife verarbeitet die Eingabedatei in Schritten von <bytesBufferSize> Byte, bis die gesamte Datei gelesen wurde 
-	const unsigned int bytesBufferSize = 16*1024*1024; // x MB
+	const unsigned int bytesBufferSize = 256*1024*1024; // x MB
 	off_t progress = 0, delta = 0;
 	time_t start = time(NULL);
 	long *hashInJournalPos = (long *) malloc(sizeof(long)); 
@@ -334,11 +337,6 @@ int main(int argc, char **argv) {
 				record.len = current_read; // die Blocklänge 
 				fwrite(inputFileBuffer+bytesRead, current_read, 1, storageFile); // Daten an Dump anfügen
 				memcpy(journalMapCurrentEnd, &record, sizeof(journalentry)); // Eintrag im Journal vornehmen 
-				#ifdef DEBUG
-					printf("\n%ld -> %s -> %d\n", record.block, record.hash, record.len);
-					printf("journalMapCurrentEnd: %p\n", journalMapCurrentEnd);
-					//printf("return memcpy       : %p\n", ret);
-				#endif
 #ifdef USE_CUDA
 				CUDA_HANDLE_ERR( cudaMemcpy((void *)(((journalentry *)VRAM)+journalEntries), (void*)&record, sizeof(record), cudaMemcpyHostToDevice) ); // cudaMemcpy((void *)(((journalentry *)VRAM)+journalEntries)
 #endif // USE_CUDA
@@ -380,7 +378,16 @@ int main(int argc, char **argv) {
 		#ifdef DEBUG 
 			printf("Schreibe in Metafile: %ld\n", infoForMetaFile);
 		#endif
-			fwrite(&infoForMetaFile, sizeof(infoForMetaFile), 1, metaFile);
+			// Metafile aktualisieren und notfalls vergrößern 
+			if((progress/CHUNKSIZE)>=(metaMapBufSize/sizeof(long)) {
+				// metafile muss neu gemappt werden
+				munmap(metaMapAdd, metaMapLen); // synchronisiert mit FS 
+				metaMapAdd = mapFile(fileno(metaFile), metaMapLen, metaMapBufSize, &metaMapLen);
+				metaMapCurrentEnd = metaMapAdd + metaMapLen; 
+			}
+			memcpy(metaMapCurrentEnd, &infoForMetaFile, sizeof(infoForMetaFile));
+			metaMapCurrentEnd = ((long *) metaMapCurrentEnd) + 1;
+			//fwrite(&infoForMetaFile, sizeof(infoForMetaFile), 1, metaFile);
 			//fprintf(metaFile, "%ld\n", infoForMetaFile);
 			if(journalFileChanged) {
 				newBytes += current_read;
@@ -399,6 +406,10 @@ int main(int argc, char **argv) {
 		perror("munmap");
 		exit(1);
 	}
+	if((munmap(metaMapAdd, metaMapLen))==-1) {
+		perror("munmap");
+		exit(1);
+	}
 	/* Journal-Datei wieder verkleinern */
 #ifdef DEBUG
 	printf("journalentries: %10ld\n",journalEntries);
@@ -406,6 +417,14 @@ int main(int argc, char **argv) {
 	printf("length of map : %10ld\n", journalMapLen);
 #endif // DEBUG
 	if(ftruncate(fileno(journalFile),journalEntries*sizeof(journalentry))==-1) {
+		perror("ftruncate()");
+		exit(1);
+	}
+	off_t metaFileSize = inputFileLen / CHUNKSIZE;
+	if(inputFileLen % CHUNKSIZE)
+		metaFileSize++;
+	metaFileSize *= sizeof(long);
+	if(ftruncate(fileno(metaFile),metaFileSize)==-1) {
 		perror("ftruncate()");
 		exit(1);
 	}

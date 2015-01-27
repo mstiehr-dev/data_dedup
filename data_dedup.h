@@ -45,7 +45,7 @@
 
 	
 
-	#define spareEntries 10000
+	#define spareEntries 100000 // 100_000
 	#define auxSpace spareEntries*sizeof(journalentry) // wird verwendet bei MapFile(), gibt an wieviel zusätzlicher Platz reserviert wird 
 
 	// FUNKTIONEN 
