@@ -119,6 +119,7 @@ void * mapFile(int fd, off_t len, int aux, off_t *saveLen) {
 	if(add==MAP_FAILED) {
 		perror("mmap()");
 		printf("%s\n",strerror(errno));
+		printf("fd: %d\n", fd);
 		exit(1);
 	}	
 	*saveLen = tempLen;
