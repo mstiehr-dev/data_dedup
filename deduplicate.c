@@ -379,7 +379,7 @@ int main(int argc, char **argv) {
 			printf("Schreibe in Metafile: %ld\n", infoForMetaFile);
 		#endif
 			// Metafile aktualisieren und notfalls vergrößern 
-			if((progress/CHUNKSIZE)>=(metaMapBufSize/sizeof(long)) {
+			if((progress/CHUNKSIZE)>=(metaMapBufSize/sizeof(long))) {
 				// metafile muss neu gemappt werden
 				munmap(metaMapAdd, metaMapLen); // synchronisiert mit FS 
 				metaMapAdd = mapFile(fileno(metaFile), metaMapLen, metaMapBufSize, &metaMapLen);
