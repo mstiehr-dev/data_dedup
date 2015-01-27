@@ -330,7 +330,7 @@ int main(int argc, char **argv) {
 					printf("return memcpy       : %p\n", ret);
 				#endif
 #ifdef USE_CUDA
-				CUDA_HANDLE_ERR( cudaMemcpy((void *)(((journalentry *)VRAM)+journalEntries, (void*)&record, sizeof(record), cudaMemcpyHostToDevice) ); // cudaMemcpy((void *)(((journalentry *)VRAM)+journalEntries)
+				CUDA_HANDLE_ERR( cudaMemcpy((void *)(((journalentry *)VRAM)+journalEntries), (void*)&record, sizeof(record), cudaMemcpyHostToDevice) ); // cudaMemcpy((void *)(((journalentry *)VRAM)+journalEntries)
 #endif // USE_CUDA
 				journalMapCurrentEnd = ((journalentry *)journalMapCurrentEnd) + 1; // neues Journal-Ende 
 				journalFileChanged = TRUE;
@@ -397,7 +397,7 @@ int main(int argc, char **argv) {
 	fcloseall();
 #ifdef USE_CUDA 
 	CUDA_HANDLE_ERR( cudaFree(VRAM) ); 
-#endif
+#endif // USE_CUDA
 	printf("\n\n*** successfully deduplicated \"%s\" in %.1fs [%.3f MB/s] ***\n", inputFileName, laufZeit, speed);
 	printf("*** added %ld Bytes to storage dump ***\n",newBytes);
 	return 0;
