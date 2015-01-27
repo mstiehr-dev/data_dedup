@@ -398,8 +398,8 @@ int main(int argc, char **argv) {
 #ifdef DEBUG
 	printf("journalentries: %ld\n",journalEntries);
 	printf("needed space: %ld\n", journalEntries * sizeof(journalentry));
-	printf("length of map: %ld\n", journalMapCurrentEnd-journalMapAdd);
-#endif DEBUG
+	printf("length of map: %p\n", journalMapCurrentEnd-journalMapAdd);
+#endif // DEBUG
 	if(ftruncate(fileno(journalFile),journalEntries*sizeof(journalentry))==-1) {
 		perror("ftruncate()");
 		exit(1);
