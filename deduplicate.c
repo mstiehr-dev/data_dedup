@@ -3,7 +3,7 @@
 
 #include "data_dedup.h"
 
-//#define DEBUG
+#define DEBUG
 
 #ifdef USE_CUDA
 	static void cudaCheckError(cudaError_t error, const char *file, int line) {
@@ -327,7 +327,7 @@ int main(int argc, char **argv) {
 				#ifdef DEBUG
 					printf("\n%ld -> %s -> %d\n", record.block, record.hash, record.len);
 					printf("journalMapCurrentEnd: %p\n", journalMapCurrentEnd);
-					printf("return memcpy       : %p\n", ret);
+					//printf("return memcpy       : %p\n", ret);
 				#endif
 #ifdef USE_CUDA
 				CUDA_HANDLE_ERR( cudaMemcpy((void *)(((journalentry *)VRAM)+journalEntries), (void*)&record, sizeof(record), cudaMemcpyHostToDevice) ); // cudaMemcpy((void *)(((journalentry *)VRAM)+journalEntries)
