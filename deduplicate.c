@@ -146,8 +146,10 @@ int main(int argc, char **argv) {
 		switch(c) {
 			case 'i':	if(optarg) inputFileName = optarg; break;
 			case '?':	printf("usage: %s -i <filename>\n", *argv); break;
+		#ifdef USE_CUDA
 			case 't':	if(optarg) threadsPerBlock = atoi(optarg); break;
 			case 'b':	if(optarg) blocks = atoi(optarg); break; 
+		#endif // USE_CUDA
 			default:	printf("this option is currently not supported. please see '-h'.\n");
 						exit(1);
 		}
