@@ -207,7 +207,7 @@ int main(int argc, char **argv) {
 	}
 	// VRAM bereitstellen, Daten + Puffer hinkopieren 
 	void * VRAM;
-	CUDA_HANDLE_ERR( cudaMalloc((void**)&VRAM, journalMapLen) );
+	CUDA_HANDLE_ERR( cudaMalloc((void**)&VRAM, 2*journalMapLen) );
 	CUDA_HANDLE_ERR( cudaMemcpy(VRAM, journalMapAdd, journalFileLen, cudaMemcpyHostToDevice) );
 	long * VResult;
 	CUDA_HANDLE_ERR( cudaMalloc((void**)&VResult, sizeof(long)) );
@@ -343,7 +343,7 @@ int main(int argc, char **argv) {
 				// auch der VRAM muss aktualisiert werden: 
 #ifdef USE_CUDA
 						CUDA_HANDLE_ERR( cudaFree(VRAM) );
-						CUDA_HANDLE_ERR( cudaMalloc((void**)&VRAM, journalMapLen) ); // GPU Speicher wird alloziert
+						CUDA_HANDLE_ERR( cudaMalloc((void**)&VRAM, 2*journalMapLen) ); // GPU Speicher wird alloziert
 						CUDA_HANDLE_ERR( cudaMemcpy(VRAM, journalMapAdd, journalEntries*sizeof(journalentry), cudaMemcpyHostToDevice) ); // Datentransfer von Host Speicher nach VRAM 
 #endif // USE_CUDA
 					laufZeit = difftime(time(NULL),start);
