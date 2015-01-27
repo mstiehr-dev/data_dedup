@@ -313,8 +313,9 @@ int main(int argc, char **argv) {
 			CUDA_HANDLE_ERR( cudaMemcpy(VResult, hashInJournalPos, sizeof(long), cudaMemcpyHostToDevice) );
 			searchKernel<<<blocks,threadsPerBlock>>>(VRAM, VResult, journalEntries);
 			CUDA_HANDLE_ERR( cudaMemcpy(hashInJournalPos, VResult, sizeof(long), cudaMemcpyDeviceToHost) );
-			printf("kernel result: %10ld\n", *hashInJournalPos);
-			printf("journalEntries: %10ld\n", journalEntries);
+			#ifdef DEBUG 
+				printf("kernel result: %10ld\n", *hashInJournalPos);
+			#endif // DEBUG
 #endif // USE_CUDA
 			if(*hashInJournalPos==-1L) { // DER HASH IST UNBEKANNT -> MUSS ANGEFÜGT WERDEN 
 				//printf("+"); //fflush(stdout);
