@@ -69,6 +69,7 @@ const char * buildString3s(const char *s1, const char *s2, const char *s3) {
 	return newStr;
 }
 
+#ifndef USE_CUDA
 long isHashInMappedJournal(char *hash, void * add, long records) {
 	/* Rückgabewert: Zeilennummer, in der der Hash gefunden wurde, also auch die Blocknummer im dumpfile
 	 * sonst -1 */
@@ -106,6 +107,7 @@ int memcmp4l(char *s, char *t) { // gibt 1 zurück bei Unterscheidung
 	}
 	return 0;
 }
+#endif // USE_CUDA
 
 void * mapFile(int fd, off_t len, int aux, off_t *saveLen) {
 	off_t tempLen = len+aux;
@@ -196,6 +198,7 @@ int main(int argc, char **argv) {
 		printf("JournalEntries: %ld\n", journalEntries);
 		printf("JournalMapLen : %ld\n", journalMapLen);
 		printf("JournalMapAdd : %p\n", journalMapAdd);
+		long hits = 0;
 	#endif
 #ifdef USE_CUDA 
 	if(journalMapLen> 1027604480) { // gemessen 
@@ -317,6 +320,7 @@ int main(int argc, char **argv) {
 			CUDA_HANDLE_ERR( cudaMemcpyToSymbol(goldenHash, md5String, 32) ); // den Suchhash in den constant cache bringen 
 			CUDA_HANDLE_ERR( cudaMemcpy(VResult, hashInJournalPos, sizeof(long), cudaMemcpyHostToDevice) );
 			searchKernel<<<blocks,threadsPerBlock>>>(VRAM, VResult, journalEntries);
+			CUDA_HANDLE_ERR( cudaDeviceSynchronize() );
 			CUDA_HANDLE_ERR( cudaMemcpy(hashInJournalPos, VResult, sizeof(long), cudaMemcpyDeviceToHost) );
 			#ifdef DEBUG 
 				printf("kernel result: %10ld\n", *hashInJournalPos);
@@ -337,11 +341,11 @@ int main(int argc, char **argv) {
 					//printf("return memcpy       : %p\n", ret);
 				#endif
 #ifdef USE_CUDA
-				CUDA_HANDLE_ERR( cudaMemcpy((void *)(((journalentry *)VRAM)+journalEntries++), (void*)&record, sizeof(record), cudaMemcpyHostToDevice) ); // cudaMemcpy((void *)(((journalentry *)VRAM)+journalEntries)
+				CUDA_HANDLE_ERR( cudaMemcpy((void *)(((journalentry *)VRAM)+journalEntries), (void*)&record, sizeof(record), cudaMemcpyHostToDevice) ); // cudaMemcpy((void *)(((journalentry *)VRAM)+journalEntries)
 #endif // USE_CUDA
 				journalMapCurrentEnd = ((journalentry *)journalMapCurrentEnd) + 1; // neues Journal-Ende 
 				journalFileChanged = TRUE;
-				if(journalEntries*sizeof(journalentry) >= journalMapLen) {
+				if(++journalEntries*sizeof(journalentry) >= journalMapLen) {
 				// die Journal-Datei muss vergrößert und erneut gemappt werden 
 					munmap(journalMapAdd, journalMapLen); // synchronisiert mit Dateisystem 
 					journalMapAdd = mapFile(fileno(journalFile),journalMapLen, auxSpace, &journalMapLen); // remap 
@@ -370,6 +374,9 @@ int main(int argc, char **argv) {
 			} else { // DER HASH IST BEREITS BEKANNT
 				//printf("."); //fflush(stdout);
 				infoForMetaFile = *hashInJournalPos; // die zeile des journals, in der der hash gefunden wurde, wird ins metafile übernommen 
+			#ifdef DEBUG
+				hits++;
+			#endif
 			}
 			// Informationen ins Metafile schreiben
 		#ifdef DEBUG 
@@ -399,6 +406,7 @@ int main(int argc, char **argv) {
 	printf("journalentries: %10ld\n",journalEntries);
 	printf("needed space  : %10ld\n", journalEntries * sizeof(journalentry));
 	printf("length of map : %10ld\n", journalMapLen);
+	printf("hits          : %10ld\n", hits);
 #endif // DEBUG
 	if(ftruncate(fileno(journalFile),journalEntries*sizeof(journalentry))==-1) {
 		perror("ftruncate()");
