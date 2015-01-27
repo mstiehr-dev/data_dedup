@@ -281,8 +281,8 @@ int main(int argc, char **argv) {
 			fcloseall();
 			exit(1);
 		}
-		bytesActuallyBuffered = fread(inputFileBuffer,1,bytesBufferSize,inputFile); // liest 1*bytesBufferSize aus inputFile nach inputFileBuffer (Rückgabewert ist Anzahl der gelesenen Bytes, wenn size 1 ist )
-		
+		fread(inputFileBuffer,1,bytesBufferSize,inputFile); // liest 1*bytesBufferSize aus inputFile nach inputFileBuffer (Rückgabewert ist Anzahl der gelesenen Bytes, wenn size 1 ist )
+		bytesActuallyBuffered = bytesBufferSize > (inputFileLen-bytesBufferedTotal) ? inputFileLen - bytesBufferedTotal : bytesBufferSize; 
 		// FÜR JEDEN CHUNK EINEN HASH BERECHNEN UND MIT DEM JOURNAL VERGLEICHEN 
 		md5String = (char *) malloc(sizeof(char)*(32+1));
 		if(md5String==NULL) {
