@@ -269,7 +269,7 @@ int main(int argc, char **argv) {
 	printf("deduplicating \"%s\" [%.3f MB]\n",inputFileName, inputFileLenMB);
 	char *md5String = (char *) NULL;
 	// Die Schleife verarbeitet die Eingabedatei in Schritten von <bytesBufferSize> Byte, bis die gesamte Datei gelesen wurde 
-	const unsigned int bytesBufferSize = 64*1024*1024; // x MB
+	const unsigned int bytesBufferSize = 16*1024*1024; // x MB
 	off_t progress = 0, delta = 0;
 	time_t start = time(NULL);
 	long *hashInJournalPos = (long *) malloc(sizeof(long)); 
