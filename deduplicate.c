@@ -383,7 +383,7 @@ int main(int argc, char **argv) {
 				// metafile muss neu gemappt werden
 				munmap(metaMapAdd, metaMapLen); // synchronisiert mit FS 
 				metaMapAdd = mapFile(fileno(metaFile), metaMapLen, metaMapBufSize, &metaMapLen);
-				metaMapCurrentEnd = metaMapAdd + metaMapLen; 
+				metaMapCurrentEnd = ((char *)metaMapAdd) + metaMapLen; 
 			}
 			memcpy(metaMapCurrentEnd, &infoForMetaFile, sizeof(infoForMetaFile));
 			metaMapCurrentEnd = ((long *) metaMapCurrentEnd) + 1;
