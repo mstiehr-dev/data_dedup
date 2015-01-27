@@ -207,7 +207,7 @@ int main(int argc, char **argv) {
 	}
 	// VRAM bereitstellen, Daten + Puffer hinkopieren 
 	void * VRAM;
-	CUDA_HANDLE_ERR( cudaMalloc((void**)&VRAM, 2*journalMapLen) );
+	CUDA_HANDLE_ERR( cudaMalloc((void**)&VRAM, journalMapLen) );
 	CUDA_HANDLE_ERR( cudaMemcpy(VRAM, journalMapAdd, journalFileLen, cudaMemcpyHostToDevice) );
 	long * VResult;
 	CUDA_HANDLE_ERR( cudaMalloc((void**)&VResult, sizeof(long)) );
@@ -253,6 +253,11 @@ int main(int argc, char **argv) {
 	off_t storageFileLen = storageFileStats.st_size;
 
 // BEGINN DER VERARBEITUNG
+#ifdef DEBUG
+	char buf[255];
+	printf("Beginnen? [enter]\n");
+	fgets(buf, 255, stdin);
+#endif // DEBUG
 	startZeit = time(NULL);	
 	long newBytes = 0; // Blöcke, die neu ins Journal aufgenommen wurden 
 	char * inputFileBuffer; // dort wird die Datei in Stückchen gepuffert 
@@ -262,7 +267,7 @@ int main(int argc, char **argv) {
 	printf("deduplicating \"%s\" [%.3f MB]\n",inputFileName, inputFileLenMB);
 	char *md5String = (char *) NULL;
 	// Die Schleife verarbeitet die Eingabedatei in Schritten von <bytesBufferSize> Byte, bis die gesamte Datei gelesen wurde 
-	const unsigned int bytesBufferSize = 8*1024*1024; // 128 MB
+	const unsigned int bytesBufferSize = 64*1024*1024; // x MB
 	off_t progress = 0, delta = 0;
 	time_t start = time(NULL);
 	long *hashInJournalPos = (long *) malloc(sizeof(long)); 
@@ -319,7 +324,7 @@ int main(int argc, char **argv) {
 #endif // USE_CUDA
 			if(*hashInJournalPos==-1L) { // DER HASH IST UNBEKANNT -> MUSS ANGEFÜGT WERDEN 
 				//printf("+"); //fflush(stdout);
-				infoForMetaFile = journalEntries++; // in diesem Datensatz wird sich der neue Hash befinden
+				infoForMetaFile = journalEntries; // in diesem Datensatz wird sich der neue Hash befinden
 				journalentry record; // neuen Eintrag bauen 
 				record.block = storageFileLen; // ganz hinten anfügen -> aktuelles Dateiende
 				strncpy(record.hash, md5String, 32+1); // die Prüfsumme wird übernommen
@@ -332,7 +337,7 @@ int main(int argc, char **argv) {
 					//printf("return memcpy       : %p\n", ret);
 				#endif
 #ifdef USE_CUDA
-				CUDA_HANDLE_ERR( cudaMemcpy((void *)(((journalentry *)VRAM)+journalEntries), (void*)&record, sizeof(record), cudaMemcpyHostToDevice) ); // cudaMemcpy((void *)(((journalentry *)VRAM)+journalEntries)
+				CUDA_HANDLE_ERR( cudaMemcpy((void *)(((journalentry *)VRAM)+journalEntries++), (void*)&record, sizeof(record), cudaMemcpyHostToDevice) ); // cudaMemcpy((void *)(((journalentry *)VRAM)+journalEntries)
 #endif // USE_CUDA
 				journalMapCurrentEnd = ((journalentry *)journalMapCurrentEnd) + 1; // neues Journal-Ende 
 				journalFileChanged = TRUE;
@@ -344,7 +349,7 @@ int main(int argc, char **argv) {
 				// auch der VRAM muss aktualisiert werden: 
 #ifdef USE_CUDA
 						CUDA_HANDLE_ERR( cudaFree(VRAM) );
-						CUDA_HANDLE_ERR( cudaMalloc((void**)&VRAM, 2*journalMapLen) ); // GPU Speicher wird alloziert
+						CUDA_HANDLE_ERR( cudaMalloc((void**)&VRAM, journalMapLen) ); // GPU Speicher wird alloziert
 						CUDA_HANDLE_ERR( cudaMemcpy(VRAM, journalMapAdd, journalEntries*sizeof(journalentry), cudaMemcpyHostToDevice) ); // Datentransfer von Host Speicher nach VRAM 
 #endif // USE_CUDA
 					laufZeit = difftime(time(NULL),start);
@@ -367,9 +372,9 @@ int main(int argc, char **argv) {
 				infoForMetaFile = *hashInJournalPos; // die zeile des journals, in der der hash gefunden wurde, wird ins metafile übernommen 
 			}
 			// Informationen ins Metafile schreiben
-			#ifdef DEBUG 
+		#ifdef DEBUG 
 			printf("Schreibe in Metafile: %ld\n", infoForMetaFile);
-			#endif
+		#endif
 			fwrite(&infoForMetaFile, sizeof(infoForMetaFile), 1, metaFile);
 			//fprintf(metaFile, "%ld\n", infoForMetaFile);
 			if(journalFileChanged) {
@@ -390,6 +395,11 @@ int main(int argc, char **argv) {
 		exit(1);
 	}
 	/* Journal-Datei wieder verkleinern */
+#ifdef DEBUG
+	printf("journalentries: %ld\n",journalEntries);
+	printf("needed space: %ld\n", journalEntries * sizeof(journalentry));
+	printf("length of map: %ld\n", journalMapCurrentEnd-journalMapAdd);
+#endif DEBUG
 	if(ftruncate(fileno(journalFile),journalEntries*sizeof(journalentry))==-1) {
 		perror("ftruncate()");
 		exit(1);
@@ -402,5 +412,8 @@ int main(int argc, char **argv) {
 #endif // USE_CUDA
 	printf("\n\n*** successfully deduplicated \"%s\" in %.1fs [%.3f MB/s] ***\n", inputFileName, laufZeit, speed);
 	printf("*** added %ld Bytes to storage dump ***\n",newBytes);
+#ifdef USE_CUDA
+	printf("CUDA Setup: %d x %d Threads\n", blocks, threadsPerBlock);
+#endif
 	return 0;
 }
