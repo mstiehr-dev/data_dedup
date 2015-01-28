@@ -12,10 +12,10 @@ host: deduplicate.c
 
 
 displayjournal: 
-	$(CC) $(LDFLAGS) displayjournal.c data_dedup.o -o displayjournal
+	$(CC) $(LDFLAGS) displayjournal.c -o displayjournal
 
 reassemble:
-	$(CC) $(LDFLAGS) reassemble.c data_dedup.o -o reassemble
+	$(CC) $(LDFLAGS) reassemble.c -o reassemble
 
 displaymetafile: 
 	$(CC) $(LDFLAGS) displaymetafile.c -o displaymetafile
