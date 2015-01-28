@@ -324,7 +324,7 @@ int main(int argc, char **argv) {
 			*hashInJournalPos = isHashInMappedJournal(md5String, journalMapAdd, journalEntries);
 #else
 			CUDA_HANDLE_ERR( cudaMemcpyToSymbol(goldenHash, md5String, 32) ); // den Suchhash in den constant cache bringen 
-			CUDA_HANDE_ERR( cudaMemcpyToSymbol(entries, &journalentries, sizeof(journalentries)) ); 
+			CUDA_HANDE_ERR( cudaMemcpyToSymbol(entries, &journalEntries, sizeof(journalEntries)) ); 
 			CUDA_HANDLE_ERR( cudaMemcpy(VResult, hashInJournalPos, sizeof(long), cudaMemcpyHostToDevice) ); // init
 			searchKernel<<<blocks,threadsPerBlock>>>(VRAM, VResult);
 			CUDA_HANDLE_ERR( cudaDeviceSynchronize() );
