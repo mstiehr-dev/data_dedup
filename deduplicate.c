@@ -20,7 +20,7 @@
 	#endif // CUDA_HANDLE_ERR
 	
 	__constant__ char goldenHash[33];	// im Constant-Cache gehaltener Such-String
-	__constant__ int entries;
+	__constant__ long *entries;
 	int blocks = 4;	// Konfiguration des Kernelaufrufs: Anzahl der Blöcke || beste Performance: 2* MultiProcessorCount
 	int threadsPerBlock = 1024; // maximum
 	
@@ -30,7 +30,7 @@
 		const long *c1,*c2;
 		char n, diff; // diff: der aktuelle Thread soll nicht öfter laufen, als nötig (auf gesamten Kernelaufruf nicht ausweitbar) 
 		char n_init = 32/sizeof(long); // 4
-		while(idx<entries) { // Threads werden recycled, siehe Inkrement am Fuß der Schleife
+		while(idx<*entries) { // Threads werden recycled, siehe Inkrement am Fuß der Schleife
 			diff = 0; // FALSE
 			n = n_init; // 4 Vergleiche 
 			// Pointer jeweils auf den Anfang setzen 
@@ -46,7 +46,7 @@
 			}
 			if(!diff) { // treffer
 				*result = idx; // Thread-Index ist die Nummer des Eintrags
-				idx = entries; // dieser thread braucht nicht weitersuchen
+				idx = *entries; // dieser thread braucht nicht weitersuchen
 			}
 			idx += blockDim.x * gridDim.x; // aktueller index + (anzahl der Blöcke * Threads pro Block) 
 		}
