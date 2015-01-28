@@ -20,10 +20,11 @@
 	#endif // CUDA_HANDLE_ERR
 	
 	__constant__ char goldenHash[33];	// im Constant-Cache gehaltener Such-String
+	__constant__ int entries;
 	int blocks = 4;	// Konfiguration des Kernelaufrufs: Anzahl der Blöcke || beste Performance: 2* MultiProcessorCount
 	int threadsPerBlock = 1024; // maximum
 	
-	__global__ void searchKernel(void *entrySet, long *result, int entries) {
+	__global__ void searchKernel(void *entrySet, long *result) {
 		// implementiert memcmp auf Basis von <long> Vergleichen 
 		long idx = threadIdx.x + blockIdx.x * blockDim.x;
 		const long *c1,*c2;
@@ -323,8 +324,9 @@ int main(int argc, char **argv) {
 			*hashInJournalPos = isHashInMappedJournal(md5String, journalMapAdd, journalEntries);
 #else
 			CUDA_HANDLE_ERR( cudaMemcpyToSymbol(goldenHash, md5String, 32) ); // den Suchhash in den constant cache bringen 
-			CUDA_HANDLE_ERR( cudaMemcpy(VResult, hashInJournalPos, sizeof(long), cudaMemcpyHostToDevice) );
-			searchKernel<<<blocks,threadsPerBlock>>>(VRAM, VResult, journalEntries);
+			CUDA_HANDE_ERR( cudaMemcpyToSymbol(entries, &journalentries, sizeof(journalentries)) ); 
+			CUDA_HANDLE_ERR( cudaMemcpy(VResult, hashInJournalPos, sizeof(long), cudaMemcpyHostToDevice) ); // init
+			searchKernel<<<blocks,threadsPerBlock>>>(VRAM, VResult);
 			CUDA_HANDLE_ERR( cudaDeviceSynchronize() );
 			CUDA_HANDLE_ERR( cudaMemcpy(hashInJournalPos, VResult, sizeof(long), cudaMemcpyDeviceToHost) );
 			#ifdef DEBUG 
