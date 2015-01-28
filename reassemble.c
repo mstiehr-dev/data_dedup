@@ -63,7 +63,7 @@ int main(int argc, char **argv) {
 	printf(" * reassembling \"%s\"\n",restoreFileName);
 	
 	
-	startZeit = time(NULL);
+	time_t startZeit = time(NULL);
 	
 	
 	// VORGEHEN: ZEILE AUS METAFILE LESEN, DIESEN DATENSATZ AUS JOURNAL HOLEN, ENTSPRECHENDEN DATENBLOCK EINLESEN UND AN ZIELDATEI ANHÄNGEN
@@ -89,7 +89,7 @@ int main(int argc, char **argv) {
 		}
 		readBytes += journalEntry.len;
 	}
-	laufZeit = difftime(time(NULL),startZeit);
+	time_t laufZeit = difftime(time(NULL),startZeit);
 	if(laufZeit<0.5f) laufZeit=0.5f;
 	double speed = (readBytes/(1024*1024.0)) / laufZeit;
 	printf("\nsuccessfully reassembled \"%s\" [%.1f MB/s]\n\n",restoreFileName, speed);
