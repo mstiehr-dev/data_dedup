@@ -20,7 +20,7 @@
 	#endif // CUDA_HANDLE_ERR
 	
 	__constant__ char goldenHash[33];	// im Constant-Cache gehaltener Such-String
-	__constant__ long *entries;
+	__constant__ long entries[1];
 	int blocks = 4;	// Konfiguration des Kernelaufrufs: Anzahl der Blöcke || beste Performance: 2* MultiProcessorCount
 	int threadsPerBlock = 1024; // maximum
 	
