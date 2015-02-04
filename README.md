@@ -15,9 +15,12 @@
 - deduplicate{Host,GPU} -i \<filename\>
 - reassemble \<metafile\>
 
+- [detailed description]
+
 
 
 [BSD 3 License]: https://tldrlegal.com/license/bsd-3-clause-license-%28revised%29#fulltext
 [cuda-sdk]: http://docs.nvidia.com/cuda/cuda-getting-started-guide-for-linux/
 [gcc]: https://gcc.gnu.org
 [libssl-dev]: https://packages.debian.org/de/wheezy/libssl-dev
+[detailed description]: http://maltin.pisces.uberspace.de/dedup/
