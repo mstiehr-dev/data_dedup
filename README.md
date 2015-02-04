@@ -17,7 +17,9 @@
 
 - [detailed description]
 
-
+##cuda command line switches
+- -b n: use n kernel copies (blocks)
+- -t n: use n threads per block
 
 [BSD 3 License]: https://tldrlegal.com/license/bsd-3-clause-license-%28revised%29#fulltext
 [cuda-sdk]: http://docs.nvidia.com/cuda/cuda-getting-started-guide-for-linux/
